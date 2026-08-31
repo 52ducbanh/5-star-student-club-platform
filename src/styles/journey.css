@@ -1,0 +1,1054 @@
+/* ============================================================
+   COSMIC JOURNEY MAP & ACTION-ORIENTED PANEL — 5SS UET
+   Art Direction: Bright Dreamy Cosmic / Interactive Constellation
+   ============================================================ */
+
+.journey-page .container--wide {
+  max-width: min(1380px, calc(100% - 48px));
+}
+
+/* ── Layout Grid ────────────────────────────────────────────── */
+.journey-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+/* ── Cosmic Map Canvas Container ────────────────────────────── */
+.journey-map {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid rgba(159, 215, 245, 0.28);
+  border-radius: var(--r-2xl);
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 50%, rgba(20, 60, 120, 0.6) 0%, transparent 70%),
+    radial-gradient(circle at 80% 20%, rgba(94, 175, 232, 0.2) 0%, transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(245, 101, 180, 0.15) 0%, transparent 40%),
+    linear-gradient(152deg, #0d2856 0%, #091d3e 60%, #06142c 100%);
+  box-shadow:
+    inset 0 0 100px rgba(94, 175, 232, 0.12),
+    0 28px 80px rgba(4, 16, 40, 0.45);
+  overflow: hidden;
+  padding: 16px 20px;
+  height: fit-content;
+  align-self: start;
+  position: sticky;
+  top: calc(var(--header-h, 72px) + 20px);
+}
+
+/* Cosmic atmospheric star-dust */
+.journey-map::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.25;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.85) 0.75px, transparent 0.9px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 90%);
+}
+
+/* Top Status Bar */
+.journey-map__status {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(159, 215, 245, 0.12);
+}
+
+.journey-map__storage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.journey-map__storage-badge svg {
+  color: var(--candy-yellow);
+}
+
+.journey-map__summary-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 103, 0.35);
+  color: var(--candy-yellow);
+  background: rgba(255, 212, 103, 0.12);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Bottom Bar */
+.journey-map__bottom-bar {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 10px;
+  border-top: 1px solid rgba(159, 215, 245, 0.12);
+  margin-top: auto;
+}
+
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1.5px solid rgba(159, 215, 245, 0.25);
+  border-radius: var(--r-xs);
+  color: var(--text-muted);
+  background: rgba(14, 44, 90, 0.75);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reset-button:hover:not(:disabled) {
+  border-color: rgba(255, 101, 132, 0.55);
+  background: rgba(255, 101, 132, 0.15);
+  color: #ff9db2;
+}
+
+.reset-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ════════════════════════════════════════════════════════════
+   DESKTOP 2D CONSTELLATION CANVAS & STAGE
+   ════════════════════════════════════════════════════════════ */
+
+.journey-map-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 640;
+  margin: 6px auto 10px;
+  overflow: visible;
+}
+
+.journey-constellation__ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 52%, rgba(255, 212, 103, 0.08) 0%, transparent 60%);
+}
+
+.journey-constellation__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.journey-constellation__orbit-track {
+  fill: none;
+  stroke: rgba(159, 215, 245, 0.18);
+  stroke-width: 1.8;
+  stroke-dasharray: 4 8;
+}
+
+.journey-spoke {
+  stroke-width: 2.2;
+  stroke-dasharray: 3 6;
+  opacity: 0.5;
+  transition: stroke-width 0.3s ease, opacity 0.3s ease;
+}
+
+.journey-spoke.is-focused {
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+  opacity: 1;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.journey-spoke.is-complete {
+  stroke-dasharray: none;
+  opacity: 0.85;
+}
+
+/* Central Core Star Anchor */
+.journey-core-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.journey-core-star {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: default;
+}
+
+.journey-core-star__halo {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 212, 103, 0.35) 0%, rgba(245, 101, 180, 0.2) 50%, transparent 75%);
+  filter: blur(14px);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.journey-core-star.is-complete .journey-core-star__halo {
+  background: radial-gradient(circle, rgba(255, 212, 103, 0.55) 0%, rgba(255, 139, 114, 0.4) 50%, transparent 75%);
+  filter: blur(20px);
+}
+
+.journey-core-star__ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 212, 103, 0.45);
+  animation: core-spin 24s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes core-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.journey-core-star__orb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 212, 103, 0.35), rgba(16, 52, 108, 0.95) 70%);
+  box-shadow: 0 12px 32px rgba(4, 16, 40, 0.6), inset 0 1px rgba(255, 255, 255, 0.4);
+  position: relative;
+  z-index: 2;
+}
+
+.journey-core-star.is-complete .journey-core-star__orb {
+  background: radial-gradient(circle at 35% 30%, #ffd467, #ff8b72 60%, #0d2856 95%);
+  border-color: #ffffff;
+  box-shadow: 0 16px 40px rgba(245, 101, 180, 0.5), inset 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.journey-core-star__icon {
+  color: var(--candy-yellow);
+}
+
+.core-icon-complete {
+  color: #ffffff;
+  filter: drop-shadow(0 0 8px #ffd467);
+}
+
+.journey-core-star__number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.journey-core-star__number strong {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.journey-core-star__number small {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--candy-yellow);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.journey-core-star__label {
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(159, 215, 245, 0.25);
+  background: rgba(14, 46, 94, 0.85);
+  backdrop-filter: blur(12px);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ════════════════════════════════════════════════════════════
+   PLANETARY CRITERION NODES & ANCHORS
+   ════════════════════════════════════════════════════════════ */
+
+.journey-planet-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  pointer-events: auto;
+}
+
+.journey-planet-node {
+  position: relative;
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+}
+
+.journey-planet-node__focus-tag {
+  position: absolute;
+  top: -24px;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--planet-color, var(--candy-yellow));
+  color: #0b234d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: pulse-gentle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.journey-planet-node__body {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+}
+
+.journey-planet-node__meter {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.journey-planet-node__meter .meter-track {
+  fill: none;
+  stroke: rgba(159, 215, 245, 0.18);
+  stroke-width: 3.5;
+}
+
+.journey-planet-node__meter .meter-fill {
+  fill: none;
+  stroke: var(--planet-color, var(--candy-yellow));
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.45s ease;
+}
+
+.journey-planet-node__orb {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--planet-color) 45%, transparent), rgba(12, 38, 80, 0.95) 75%);
+  box-shadow: 0 8px 24px rgba(4, 16, 40, 0.5), inset 0 1px rgba(255, 255, 255, 0.3);
+  color: var(--planet-color, #ffffff);
+  transition: all 0.25s ease;
+}
+
+.journey-planet-node:hover .journey-planet-node__orb,
+.journey-planet-node:focus-visible .journey-planet-node__orb {
+  border-color: var(--planet-color);
+  box-shadow: 0 0 24px var(--planet-color), inset 0 0 16px rgba(255, 255, 255, 0.4);
+}
+
+.journey-planet-node.is-selected .journey-planet-node__orb {
+  border-color: #ffffff;
+  box-shadow: 0 0 28px var(--planet-color), inset 0 0 20px var(--planet-color);
+  color: #ffffff;
+}
+
+.journey-planet-node.is-complete .journey-planet-node__orb {
+  background: radial-gradient(circle at 35% 30%, #ffffff, var(--planet-color) 70%);
+  color: #0b234d;
+  box-shadow: 0 0 24px var(--planet-color);
+}
+
+.journey-planet-node__badge {
+  position: absolute;
+  bottom: -4px;
+  right: -2px;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 32, 68, 0.95);
+  border: 1px solid var(--planet-color, rgba(255, 255, 255, 0.4));
+  color: var(--planet-color, #ffffff);
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.journey-planet-node.is-complete .journey-planet-node__badge {
+  background: var(--planet-color);
+  color: #0b234d;
+}
+
+.journey-planet-node__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+}
+
+.journey-planet-node__order {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--planet-color, var(--candy-yellow));
+  text-transform: uppercase;
+}
+
+.journey-planet-node__title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+.journey-planet-node.is-selected .journey-planet-node__title {
+  color: var(--planet-color);
+}
+
+/* ════════════════════════════════════════════════════════════
+   REFORMED DETAIL PANEL (Action-Oriented)
+   ════════════════════════════════════════════════════════════ */
+
+.journey-panel-wrap {
+  border: 1.5px solid rgba(159, 215, 245, 0.28);
+  border-radius: var(--r-2xl);
+  background: linear-gradient(155deg, rgba(16, 52, 108, 0.88), rgba(8, 26, 58, 0.96));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 28px 80px rgba(4, 16, 40, 0.45);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  align-self: start;
+}
+
+.journey-panel {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(159, 215, 245, 0.35) transparent;
+}
+
+/* Header & Progress */
+.journey-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(159, 215, 245, 0.14);
+}
+
+.journey-panel__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.journey-panel__badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--criterion-color, var(--candy-yellow));
+}
+
+.journey-panel__status-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.journey-panel__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.journey-panel__meaning {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Progress bar inside panel */
+.journey-panel__bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.journey-panel__bar-track {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(159, 215, 245, 0.15);
+  overflow: hidden;
+}
+
+.journey-panel__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.journey-panel__bar-label {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--criterion-color, #ffffff);
+}
+
+/* ════════════════════════════════════════════════════════════
+   NEXT BEST ACTION SPOTLIGHT CARD
+   ════════════════════════════════════════════════════════════ */
+
+.journey-next-action {
+  border-radius: var(--r-md);
+  border: 1.5px solid color-mix(in srgb, var(--criterion-color, var(--candy-yellow)) 45%, transparent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--criterion-color) 18%, rgba(14, 46, 94, 0.7)), rgba(10, 32, 68, 0.85));
+  padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(4, 16, 40, 0.25);
+}
+
+.journey-next-action__pending {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journey-next-action__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.journey-next-action__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--criterion-color, var(--candy-yellow));
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.journey-next-action__text {
+  margin: 0;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.journey-next-action__cta {
+  align-self: flex-start;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--criterion-color, var(--gradient-candy));
+  color: #0b234d;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.journey-next-action__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.journey-next-action__complete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.next-action-icon-complete {
+  color: var(--candy-yellow);
+  flex-shrink: 0;
+}
+
+.journey-next-action__complete strong {
+  display: block;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.journey-next-action__complete p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CHECKLIST TRACKER
+   ════════════════════════════════════════════════════════════ */
+
+.journey-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journey-checklist__header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.journey-checklist__header h3 svg {
+  color: var(--criterion-color, var(--candy-yellow));
+}
+
+.journey-checklist__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journey-checklist__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1.5px solid rgba(159, 215, 245, 0.2);
+  border-radius: var(--r-sm);
+  background: rgba(14, 44, 90, 0.55);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.journey-checklist__item:hover {
+  border-color: rgba(159, 215, 245, 0.4);
+  background: rgba(18, 54, 110, 0.7);
+}
+
+.journey-checklist__item.is-checked {
+  border-color: color-mix(in srgb, var(--criterion-color) 45%, transparent);
+  background: color-mix(in srgb, var(--criterion-color) 12%, rgba(14, 44, 90, 0.75));
+}
+
+.journey-checklist__item.is-next:not(.is-checked) {
+  border-color: var(--criterion-color);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--criterion-color) 25%, transparent);
+}
+
+.journey-checklist__item input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.journey-checklist__item .custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(159, 215, 245, 0.4);
+  background: rgba(8, 26, 56, 0.85);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: all 0.2s ease;
+}
+
+.journey-checklist__item.is-checked .custom-checkbox {
+  border-color: var(--criterion-color);
+  background: var(--criterion-color);
+  color: #0b234d;
+  box-shadow: 0 0 10px var(--criterion-color);
+}
+
+.journey-checklist__label {
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.journey-checklist__item.is-checked .journey-checklist__label {
+  color: var(--text-muted);
+}
+
+.item-order {
+  color: var(--criterion-color, var(--candy-yellow));
+  font-weight: 800;
+  margin-right: 6px;
+}
+
+.next-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--criterion-color);
+  color: #0b234d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ════════════════════════════════════════════════════════════
+   COLLAPSIBLE GUIDANCE & SUPPORT RESOURCES
+   ════════════════════════════════════════════════════════════ */
+
+.journey-guidance-accordion {
+  border-top: 1px solid rgba(159, 215, 245, 0.14);
+  padding-top: 14px;
+}
+
+.journey-guidance-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(159, 215, 245, 0.22);
+  background: rgba(14, 44, 90, 0.45);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.journey-guidance-toggle:hover {
+  background: rgba(18, 54, 110, 0.65);
+  border-color: rgba(159, 215, 245, 0.4);
+}
+
+.journey-guidance-content {
+  overflow: hidden;
+}
+
+.journey-panel__details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.guidance-group h4 {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.guidance-group h4 svg {
+  color: var(--criterion-color, var(--candy-yellow));
+}
+
+.guidance-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guidance-group li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: start;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.list-bullet {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--criterion-color) 40%, transparent);
+  color: var(--criterion-color);
+  font-size: 10px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE VERTICAL COSMIC TRACK
+   ════════════════════════════════════════════════════════════ */
+
+.journey-mobile-track {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 4px 0 12px;
+}
+
+/* Mobile Core Star Summary Card */
+.journey-mobile-core {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1.5px solid rgba(255, 212, 103, 0.45);
+  background: linear-gradient(135deg, rgba(255, 212, 103, 0.18), rgba(16, 52, 108, 0.85));
+  box-shadow: 0 8px 24px rgba(4, 16, 40, 0.35);
+}
+
+.journey-mobile-core__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.journey-mobile-core__badge-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 212, 103, 0.2);
+  border: 1px solid rgba(255, 212, 103, 0.5);
+  color: var(--candy-yellow);
+}
+
+.journey-mobile-core.is-complete .journey-mobile-core__badge-icon {
+  background: #ffd467;
+  color: #0b234d;
+}
+
+.journey-mobile-core__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--candy-yellow);
+}
+
+.journey-mobile-core__stat {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.journey-mobile-core__percent {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--candy-yellow);
+}
+
+/* Mobile Vertical List of Criterion Cards */
+.journey-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.journey-mobile-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1.5px solid rgba(159, 215, 245, 0.22);
+  background: rgba(14, 44, 90, 0.65);
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.journey-mobile-card.is-selected {
+  border-color: var(--planet-color, var(--candy-yellow));
+  background: color-mix(in srgb, var(--planet-color) 16%, rgba(14, 44, 90, 0.9));
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--planet-color) 20%, transparent);
+}
+
+.journey-mobile-card.is-complete {
+  border-color: rgba(95, 227, 161, 0.4);
+}
+
+.journey-mobile-card__orb {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--planet-color) 40%, transparent), rgba(12, 38, 80, 0.95));
+  border: 1px solid var(--planet-color, #ffffff);
+  color: var(--planet-color, #ffffff);
+  flex-shrink: 0;
+}
+
+.journey-mobile-card.is-complete .journey-mobile-card__orb {
+  background: var(--planet-color);
+  color: #0b234d;
+}
+
+.journey-mobile-card__content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.journey-mobile-card__header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.journey-mobile-card__order {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--planet-color, var(--candy-yellow));
+}
+
+.journey-mobile-card__title {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.journey-mobile-card__meter {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(159, 215, 245, 0.15);
+  overflow: hidden;
+}
+
+.journey-mobile-card__meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.journey-mobile-card__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.status-chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-chip--complete {
+  background: rgba(95, 227, 161, 0.2);
+  color: #5fe3a1;
+  border: 1px solid rgba(95, 227, 161, 0.4);
+}
+
+.status-chip--focus {
+  background: var(--planet-color, var(--candy-yellow));
+  color: #0b234d;
+}
+
+.status-chip--percent {
+  background: rgba(159, 215, 245, 0.15);
+  color: var(--text-muted);
+}
+
+.journey-mobile-card__arrow {
+  color: var(--text-muted);
+}

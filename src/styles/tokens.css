@@ -1,0 +1,108 @@
+/* ============================================================
+   DESIGN TOKENS — 5SS UET
+   ART DIRECTION: BRIGHT DREAMY COSMIC / CANDY GALAXY GEN-Z
+   ============================================================ */
+
+:root {
+  /* ── Background: Luminous Deep Cobalt & Royal Sky Galaxy ──── */
+  --bg:               #0b234d;
+  --bg-elevated:      #12356b;
+  --bg-surface:       rgba(20, 60, 118, 0.45);
+  --bg-surface-hover: rgba(30, 80, 150, 0.65);
+  --bg-card:          rgba(20, 60, 118, 0.45);
+  --bg-card-hover:    rgba(30, 80, 150, 0.65);
+  --bg-glass:         rgba(14, 46, 94, 0.85);
+  --bg-cloud:         rgba(159, 215, 245, 0.14);
+
+  /* ── Border: Soft Celestial Frost & Candy Accents ────────── */
+  --border:           rgba(159, 215, 245, 0.22);
+  --border-md:        rgba(159, 215, 245, 0.35);
+  --border-bright:    rgba(255, 255, 255, 0.65);
+  --border-candy:     rgba(245, 101, 180, 0.45);
+
+  /* ── Text: Crisp Cloud White & Dreamy Pastels ─────────────── */
+  --text:             #ffffff;
+  --text-muted:       #b6def5;
+  --text-dim:         #86b8db;
+  --text-dark:        #0b234d;
+
+  /* ── Brand Colors: Candy Galaxy Palette ──────────────────── */
+  --candy-pink:       #f565b4;
+  --candy-coral:      #ff8b72;
+  --candy-yellow:     #ffd467;
+  --sky-blue:         #5eafe8;
+  --nebula-blue:      #9fd7f5;
+  --nebula-purple:    #9a7bef;
+  --mint-green:       #5fe3a1;
+  --danger:           #ff6584;
+
+  /* ── Semantic Criteria Colors (5 Dimensions) ─────────────── */
+  --crit-gold:        #ffd467;
+  --crit-gold-glow:   rgba(255, 212, 103, 0.35);
+  --crit-blue:        #6cd5f7;
+  --crit-blue-glow:   rgba(108, 213, 247, 0.35);
+  --crit-green:       #5fe3a1;
+  --crit-green-glow:  rgba(95, 227, 161, 0.35);
+  --crit-orange:      #ff8b72;
+  --crit-orange-glow: rgba(255, 139, 114, 0.35);
+  --crit-violet:      #b794f6;
+  --crit-violet-glow: rgba(183, 148, 246, 0.35);
+
+  /* ── Aliases for Smooth Compatibility ────────────────────── */
+  --cyan:             #6cd5f7;
+  --cyan-soft:        rgba(108, 213, 247, 0.18);
+  --blue:             #5eafe8;
+  --blue-soft:        rgba(94, 175, 232, 0.20);
+  --violet:           #9a7bef;
+  --violet-soft:      rgba(154, 123, 239, 0.18);
+  --orange:           #ff8b72;
+  --orange-soft:      rgba(255, 139, 114, 0.20);
+  --gold:             #ffd467;
+  --gold-soft:        rgba(255, 212, 103, 0.22);
+  --green:            #5fe3a1;
+  --green-soft:       rgba(95, 227, 161, 0.18);
+
+  /* ── Brand Candy Gradients ───────────────────────────────── */
+  --gradient-candy:      linear-gradient(90deg, #f565b4 0%, #ff6e7f 28%, #ffa259 62%, #ffd467 100%);
+  --gradient-candy-diag: linear-gradient(135deg, #f565b4 0%, #ff6e7f 28%, #ffa259 62%, #ffd467 100%);
+  --gradient-candy-warm: linear-gradient(125deg, #ff8b72 0%, #ffd467 100%);
+  --gradient-cosmic:     linear-gradient(135deg, #5eafe8 0%, #9a7bef 50%, #f565b4 100%);
+  --gradient-cosmic-glow:linear-gradient(135deg, #5eafe8 0%, #9a7bef 50%, #f565b4 100%);
+  --gradient-sky:        linear-gradient(135deg, #9fd7f5 0%, #5eafe8 50%, #175797 100%);
+  --gradient-text:       linear-gradient(120deg, #ffffff 0%, #b6def5 55%, #ffd467 100%);
+
+  /* ── Ambient Celestial Glows & Poster Shadows ────────────── */
+  --glow-candy:    0 0 32px rgba(245, 101, 180, 0.38), 0 0 64px rgba(255, 139, 114, 0.22);
+  --glow-cyan:     rgba(108, 213, 247, 0.35);
+  --glow-gold:     rgba(255, 212, 103, 0.35);
+  --glow-orange:   rgba(255, 139, 114, 0.35);
+  --glow-violet:   rgba(154, 123, 239, 0.30);
+  --poster-shadow: 0 16px 36px rgba(7, 24, 56, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --poster-stroke: 1.5px solid rgba(255, 255, 255, 0.85);
+
+  /* ── Typography: Playful Editorial ───────────────────────── */
+  --font-body:    "Be Vietnam Pro", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Baloo 2", "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Radius: Soft, Rounded, Playful ──────────────────────── */
+  --r-xs:  10px;
+  --r-sm:  14px;
+  --r-md:  18px;
+  --r-lg:  24px;
+  --r-xl:  30px;
+  --r-2xl: 40px;
+
+  /* ── Animation Easing & Timing ───────────────────────────── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.44, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:    0.18s;
+  --dur-base:    0.28s;
+  --dur-slow:    0.48s;
+
+  /* ── Layout Grid ─────────────────────────────────────────── */
+  --header-h:         74px;
+  --container:        min(1200px, calc(100% - 48px));
+  --container-wide:   min(1380px, calc(100% - 48px));
+  --container-narrow: min(860px,  calc(100% - 48px));
+}
