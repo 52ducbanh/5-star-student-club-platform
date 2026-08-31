@@ -1,37 +1,22 @@
 {
-  "name": "5ss-website",
+  "name": "5ss-uet",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "typecheck": "tsc -b --pretty false",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.7.0",
-    "@react-three/postprocessing": "^3.1.1",
-    "lenis": "^1.3.26",
-    "lucide-react": "^1.37.0",
-    "motion": "^13.1.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3",
-    "three": "^0.180.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@types/three": "^0.180.0",
-    "@vitejs/plugin-react": "^6.1.0",
-    "oxlint": "^1.79.0",
-    "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.2"
+    "dev:client": "npm run dev --workspace @5ss/client",
+    "dev:server": "npm run start:dev --workspace @5ss/server",
+    "build": "npm run build:contracts && npm run build:client && npm run build:server",
+    "build:contracts": "npm run build --workspace @5ss/contracts",
+    "build:client": "npm run build --workspace @5ss/client",
+    "build:server": "npm run build --workspace @5ss/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspace @5ss/server",
+    "preview": "npm run preview --workspace @5ss/client"
   }
 }

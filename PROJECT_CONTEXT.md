@@ -1,462 +1,456 @@
-# PROJECT CONTEXT — 5SS UET WEBSITE
+# PROJECT CONTEXT — 5SS UET Website & STARPRINT Platform
 
-> **Document Purpose**: This file serves as the definitive single-source technical context for AI agents and engineers working on the 5SS UET codebase. Any new AI agent can read this document to understand the full system architecture, dependencies, data flows, 3D scenes, styling contracts, and development rules without needing to rescan the entire repository.
+> Last source audit: 2026-08-31, after the npm-workspaces monorepo refactor.
+>
+> This file is the engineering handoff for the live repository. Source code and package manifests remain the source of truth when they disagree with documentation.
 
----
+## 1. Product scope and status
 
-## 1. Project Overview
+5SS UET is the digital brand space for the Sinh viên 5 Tốt Club at VNU University of Engineering and Technology. The repository currently contains:
 
-- **Name**: 5SS UET — Website Câu lạc bộ Sinh viên 5 Tốt, Trường Đại học Công nghệ – ĐHQGHN (VNU University of Engineering and Technology).
-- **Core Purpose**: Digital brand space and interactive cosmic roadmap ("5SS Galaxy – Hành trình tỏa sáng") guiding students through the 5 criteria of the "Sinh viên 5 Tốt" movement:
-  1. Đạo đức tốt (Ethics & Morality)
-  2. Học tập tốt (Academic & Research)
-  3. Thể lực tốt (Physical Fitness)
-  4. Tình nguyện tốt (Volunteering & Community)
-  5. Hội nhập tốt (Integration & Global Mindset)
-- **Target Audience**: University students (primarily UET/VNU), prospective club members, university youth union reviewers, and student activity organizers.
-- **Operating Model**: Client-side single-page web app (SPA) with mock/demo features for activity registration, contact forms, and client-persistent checklist tracking via browser LocalStorage.
+1. A public marketing experience for the club and five Sinh viên 5 Tốt criteria.
+2. A browser-local checklist and constellation journey.
+3. Demo news, events, contact, and registration experiences.
+4. STARPRINT: a server-backed five-game flow that generates a deterministic illustrated star result.
+5. 5SS Sky: a privacy-filtered public collection with REST loading, Socket.IO updates, 3D rendering, and a grid fallback.
 
----
+### Status language
 
-## 2. Tech Stack
+- **Implemented:** the current client/server lifecycle, validation, persistence, image processing, publication transaction, and live Sky update.
+- **Demo/provisional:** marketing data, forms, official club information, all game content and balance, five-dimensional scoring, archetype names/descriptions, and type/effect mapping.
+- **Not present:** authentication, user accounts, moderation/admin UI, recognized evidence submission, production media storage, backend deployment infrastructure, and automated client tests.
 
-- **Runtime & Build Tooling**: Vite 8.2.2 + Rolldown/ESBuild + TypeScript 6.0.2 (`tsc -b --pretty false`).
-- **Core Framework**: React 19.2.8 + React DOM 19.2.8 (mounted directly with `createRoot`; `StrictMode` is not enabled in the current entry point).
-- **Routing**: React Router 7.18.3 (`BrowserRouter`, `Routes`, `Route`, `NavLink`, `useLocation`, `useNavigate`, `useSearchParams`).
-- **Styling**: Tailwind CSS v4.3.3 (`@tailwindcss/vite` plugin) + Custom 8-layer CSS Architecture (`index.css` cascade contract).
-- **Animation & Motion**: Motion 13.1.1 (`motion/react`, `AnimatePresence`, `useReducedMotion`).
-- **Inertial Smooth Scrolling**: Lenis 1.3.26 (`lenis/dist/lenis.css`, bound to `window.__lenis`).
-- **3D & WebGL Graphics**:
-  - Three.js 0.180.0
-  - React Three Fiber 9.7.0 (`@react-three/fiber`)
-  - React Three Drei 10.7.8 (`@react-three/drei`)
-- **Icons**: Lucide React 1.37.0 (`lucide-react`).
-- **Linting & Code Quality**: Oxlint 1.79.0 (`.oxlintrc.json`).
-- **Deployment Target**: Vercel (`vercel.json` SPA rewrite rule `/(.*) -> /index.html`).
+The current STARPRINT engine is deterministic and server-enforced, but it is not an approved psychometric instrument. Do not present it as official club policy or finalize any `TODO BUSINESS CONFIRMATION` or `TODO GAME DESIGN CONFIRMATION` item without approved stakeholder requirements.
 
----
+## 2. Monorepo architecture
 
-## 3. Project Architecture
-
-The application is structured as a component-driven React Single Page Application (SPA) with a strict top-down layout and lifecycle pipeline:
-
-```mermaid
-flowchart TD
-    IndexHTML["index.html (Meta, Google Fonts, SV5T Favicon)"] --> Main["main.tsx (createRoot)"]
-    Main --> App["App.tsx (BrowserRouter + LoadingProvider)"]
-    App --> LoadingScreen["LoadingScreen.tsx (Monotonic Asset Loader, z-index 9999)"]
-    App --> AppShell["AppShell.tsx (Lenis Scroll + Dynamic Head Titles)"]
-    AppShell --> Header["Header.tsx (Disclosure Nav + Section Spy + Mobile Menu)"]
-    AppShell --> RoutesContainer["React Router <Routes>"]
-    RoutesContainer --> HomePage["pages/HomePage.tsx (#gioi-thieu, #hanh-trinh, #hoat-dong-noi-bat, #faq, #lien-he)"]
-    RoutesContainer --> JourneyPage["pages/JourneyPage.tsx (2D/3D Roadmap + Progress Sync)"]
-    RoutesContainer --> ActivitiesPage["pages/ActivitiesPage.tsx (News, Events, URL-synced Modals)"]
-    RoutesContainer --> NotFoundPage["pages/NotFoundPage.tsx (404 Cosmic Orbit Fallback)"]
-    AppShell --> Footer["Footer.tsx (Direct 4-Column Desktop / 2-Column Mobile Compact)"]
-```
-
-### Key Architectural Layers:
-1. **Context & Transition Layer**: `LoadingContext` coordinates between `LoadingScreen` asset preloading and staged hero element appearance via `startHeroReveal()` and `completeLoading()`.
-2. **Layout Shell**: `AppShell` runs the global Lenis RAF scroll loop, updates route metadata/title, moves focus to `#main-content` after route changes, and orchestrates smooth hash scrolling. Hash navigation is owned by React Router; `AppShell` refreshes Lenis measurements before cross-route anchor scrolling.
-3. **Section Modules (`src/sections/`)**: Composable view slices for the homepage (`Hero`, `About`, `Criteria`, `Activities`, `Faq`, `Contact`).
-4. **Interactive Feature Modules (`src/features/`)**: Self-contained stateful domains (`journey/`, `forms/`, `activities/`).
-5. **3D Scenes (`src/three/scenes/`)**: WebGL R3F canvases decoupled from business logic with viewport intersection pause and mobile performance throttling.
-6. **Data & Config Layer (`src/data/`, `src/config/`)**: Immutable typed content models, navigation routes, contact specs, and criteria criteria/checklists.
-
----
-
-## 4. Folder Structure
+The root `package.json` is private and owns these npm workspaces:
 
 ```text
 5SS website/
-├── public/
-│   ├── assets/
-│   │   ├── sv5t-mark.png           # Official S-mark logo with soft gold + blue-cyan gradient (v=2)
-│   │   └── sv5t-mark-original.png  # Clean backup of original vector asset
-│   ├── og-5ss-v2.png               # Social share preview (1730x909px)
-│   └── og.png                      # Legacy social share preview
-├── src/
-│   ├── assets/
-│   │   ├── hero.png                # Hero visual asset / fallback poster
-│   │   └── SV5T.svg                # 4-organization emblem strip for marquee
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── AppShell.tsx        # Shell wrapper: Lenis scroll, route titles, anchor scroll
-│   │   │   ├── Footer.tsx          # Direct 4-col desktop / 2-col mobile footer with back-to-top
-│   │   │   └── Header.tsx          # Top nav: Logo, Giới thiệu, Routes, Explore dropdown, CTA
-│   │   ├── loading/
-│   │   │   ├── LoadingScreen.tsx   # Intro loader: monotonic progression, fonts/image preloader
-│   │   │   └── LoadingStarPentagon.tsx # 5-star geometric SVG constellation animation
-│   │   └── ui/
-│   │       ├── AccessibleModal.tsx # ARIA modal dialog with focus trap & Escape listener
-│   │       ├── AffiliationMarquee.tsx # Infinite marquee banner for student organizations
-│   │       ├── BackgroundOrbs.tsx  # Ambient floating background orbs
-│   │       ├── BrandMark.tsx       # Logo + text mark component
-│   │       ├── GlassCard.tsx       # Reusable glassmorphic container
-│   │       ├── MediaPlaceholder.tsx# Image fallback placeholder with subtle shimmer
-│   │       ├── MouseGlow.tsx       # Desktop-only cursor-following radial glow
-│   │       ├── PageIntro.tsx       # Consistent sub-page header with eyebrow & description
-│   │       ├── ScrollReveal.tsx    # IntersectionObserver-based Framer reveal wrapper
-│   │       └── Toast.tsx           # Floating feedback notification
-│   ├── config/
-│   │   ├── contact.ts              # Social links, campus address, meeting location
-│   │   └── site.ts                 # Brand strings, navigation hierarchy, breadcrumbs, CTA
-│   ├── context/
-│   │   └── LoadingContext.tsx      # Loading & staged hero reveal coordinator
-│   ├── data/
-│   │   ├── about.ts                # Mission, values, executive board/leadership data
-│   │   ├── activities.ts           # News, workshops, highlight events data
-│   │   ├── faq.ts                  # Frequently asked questions list
-│   │   └── journey.ts              # 5 criteria definitions, conditions, roadmap, checklists
-│   ├── features/
-│   │   ├── activities/
-│   │   │   └── RegistrationForm.tsx # Modal form for event registration (mock)
-│   │   ├── forms/
-│   │   │   ├── ContactForm.tsx     # Message form on contact section
-│   │   │   └── validation.ts       # Email regex and required field helpers
-│   │   ├── journey/
-│   │   │   ├── JourneyConstellation.tsx # Desktop 2D interactive constellation canvas
-│   │   │   ├── JourneyCoreStar.tsx # Center 5SS star widget with overall progress %
-│   │   │   ├── JourneyMap.tsx      # Journey state orchestrator (URL sync + toast timer)
-│   │   │   ├── JourneyMobileTrack.tsx # Mobile vertical track for narrow screens
-│   │   │   ├── JourneyPanel.tsx    # Detail accordion panel with roadmap & checklist (keyed)
-│   │   │   ├── ProgressRing.tsx    # Circular SVG progress gauge
-│   │   │   ├── journeyCoordinates.ts # 1000x640 normalized geometry coordinate map
-│   │   │   └── useJourneyProgress.ts # LocalStorage state persistence hook
-│   │   └── shared/
-│   │       └── useMediaQuery.ts    # React media query listener hook
-│   ├── hooks/
-│   │   ├── useIsMobile.ts          # Window matchMedia hook for 768px CSS breakpoint sync
-│   │   ├── useMousePosition.ts     # Client mouse tracking hook
-│   │   ├── useReducedMotion.ts     # prefers-reduced-motion OS accessibility listener
-│   │   └── useScrollProgress.ts    # Window scroll progress calculation
-│   ├── pages/
-│   │   ├── ActivitiesPage.tsx      # Activity list + query-param URL modal sync (?item=id) + Empty state
-│   │   ├── HomePage.tsx            # Main composite landing page
-│   │   ├── JourneyPage.tsx         # 5 criteria roadmap page
-│   │   └── NotFoundPage.tsx        # 404 error page
-│   ├── sections/
-│   │   ├── About/AboutSection.tsx  # Mission, values, club leadership
-│   │   ├── Activities/ActivitiesSection.tsx # Homepage news & event highlights
-│   │   ├── Contact/ContactSection.tsx # Contact channels, address, message form
-│   │   ├── Criteria/CriteriaSection.tsx # 3D Criteria Constellation stage + criteria info
-│   │   ├── Faq/FaqSection.tsx      # Accordion FAQ section
-│   │   └── Hero/HeroSection.tsx    # 3D Galaxy scene, slogan, orbit tags, CTAs
-│   ├── styles/
-│   │   ├── animations.css          # Keyframes: orbit, pulse, shimmer, marquee
-│   │   ├── components.css          # Base buttons, badges, modals, cards, inputs
-│   │   ├── journey.css             # Constellation map, node bodies, checklist styling
-│   │   ├── pages.css               # Specific page-level layout rules
-│   │   ├── responsive.css          # Mobile & tablet media queries (320px to 1024px)
-│   │   ├── theme-5ss.css           # Bright Dreamy Cosmic theme, header, footer, glass rules
-│   │   └── tokens.css              # Design tokens: colors, gradients, radiuses, glows
-│   ├── three/
-│   │   └── scenes/
-│   │       ├── Criteria3DScene.tsx # 3D rotating criteria pentagon with offscreen pause
-│   │       └── HeroGalaxyScene.tsx # 3D hero galaxy scene with core star & orbit ring
-│   ├── utils/
-│   │   └── navigation.ts           # Unified anchor scrolling & Lenis navigation helper
-│   ├── App.tsx                     # Top-level route switch & loading wrapper
-│   ├── index.css                   # Master stylesheet import cascade
-│   └── main.tsx                    # React entry point
-├── .oxlintrc.json                  # Oxlint configuration
-├── index.html                      # HTML root template with fonts & metadata
-├── package.json                    # Dependencies & build scripts
-├── tsconfig.app.json               # TypeScript app config (strict)
-├── tsconfig.json                   # Solution root tsconfig
-├── tsconfig.node.json              # Node tsconfig for Vite
-├── vercel.json                     # Vercel SPA routing rewrite
-└── vite.config.ts                  # Vite + Tailwind + Rolldown chunk splitting config
+├── client/                    @5ss/client
+│   ├── src/
+│   │   ├── app/               router, providers, shells, loading, not-found
+│   │   ├── marketing/         homepage pages/sections/data/layout
+│   │   ├── features/          activities, forms, journey, starprint
+│   │   ├── shared/            reusable components, hooks, HTTP, utilities
+│   │   ├── three/             marketing and STARPRINT scenes
+│   │   ├── styles/            ordered CSS architecture
+│   │   ├── config/            site and contact sources of truth
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── public/
+│   ├── .env.example
+│   ├── vite.config.ts
+│   └── vercel.json
+├── server/                    @5ss/server
+│   ├── src/
+│   │   ├── common/            domain exceptions, global filter, CORS helper
+│   │   ├── config/            environment mapping
+│   │   ├── database/          TypeORM module, CLI data source, migrations
+│   │   ├── modules/           sessions, games, uploads, starprints, sky
+│   │   ├── app.module.ts
+│   │   └── main.ts
+│   ├── test/                  Jest unit + full lifecycle tests
+│   └── .env.example
+├── packages/
+│   └── contracts/             @5ss/contracts shared TypeScript contracts
+├── docs/
+│   ├── architecture/
+│   ├── testing/
+│   └── prompts/               historical implementation prompts
+├── AGENTS.md
+├── README.md
+├── PROJECT_CONTEXT.md
+├── package.json
+└── package-lock.json
 ```
 
----
-
-## 5. Application Flow
-
-1. **Initialization (`main.tsx` $\rightarrow$ `App.tsx`)**:
-   - `LoadingProvider` starts each full document load with `isLoaded = false`, so the short cinematic loader replays after F5 or opening the site in a new tab. Client-side route changes do not remount the provider and therefore do not replay the loader.
-   - During a full page load, `LoadingScreen` renders as a fixed overlay (`z-index: 9999`) while the application shell is `inert` and hidden from assistive technology.
-2. **Asset & Readiness Preloading**:
-   - `LoadingScreen` checks `document.fonts.ready` and preloads `/assets/sv5t-mark.png?v=2`.
-   - R3F asset progress from `@react-three/drei`'s `useProgress()` is tracked.
-   - Progress increments monotonically ($0 \rightarrow 100\%$) with a 900ms minimum intro (250ms reduced-motion) and a hard asset-readiness deadline of 1400ms (450ms reduced-motion), preventing fonts or WebGL readiness from blocking access indefinitely.
-3. **Cinematic Handoff & Hero Reveal**:
-   - Upon hitting $100\%$, an anticipation charge of 140ms occurs, followed by a 280ms exit transition.
-   - `startHeroReveal()` triggers Navbar entrance and Hero typography floating animations.
-   - `LoadingScreen` fades out and calls `completeLoading()`, unmounting from the DOM.
-4. **Runtime User Interactions**:
-   - **Lenis Smooth Scroll**: Mouse wheel and anchor clicks scroll smoothly with offset compensation. Before a cross-route hash scroll, `AppShell` calls `lenis.resize()` so the target is not clamped to the previous route's shorter scroll limit.
-   - **Section Spy**: `IntersectionObserver` on `#gioi-thieu`, `#hanh-trinh`, `#hoat-dong-noi-bat`, `#faq`, and `#lien-he` updates navigation highlight visually without pushing history.
-   - **Journey Map Tracking**: User clicks a node to view criteria details; checking checklist items updates LocalStorage immediately and refreshes the overall progress ring.
-   - **Activities Deep Linking**: Clicking a news/event card updates URL query to `?item=news-1`. The modal opens; pressing Browser Back closes the modal without reloading.
-
----
-
-## 6. Routing & Pages
-
-| Route Path | Page Component | Description |
-| :--- | :--- | :--- |
-| `/` | `HomePage` | Composite landing page containing Hero 3D, About, Criteria 3D, Activities, FAQ, Contact. |
-| `/hanh-trinh-5-tot` | `JourneyPage` | Comprehensive 5 criteria gamified roadmap with desktop 2D constellation & mobile vertical track. |
-| `/hoat-dong` | `ActivitiesPage` | News/event archive with two tabs (`Tin tức`, `Sự kiện`), event status filters (`Tất cả`, `Sắp diễn ra`, `Đã kết thúc`), Empty State fallback, and URL modal sync (`?item=id`). |
-| `*` | `NotFoundPage` | 404 Cosmic Orbit Error Page with route return button. |
-
-### Anchor Links on Homepage:
-- `/#gioi-thieu`: About Section (Sứ mệnh, Giá trị cốt lõi, Ban chủ nhiệm)
-- `/#hanh-trinh`: Criteria Section (5 tiêu chí)
-- `/#hoat-dong-noi-bat`: Activities Section
-- `/#faq`: FAQ Section
-- `/#lien-he`: Contact & Simulation Message Form
-
----
-
-## 7. Components & Component Hierarchy
-
-### Core Layout Components
-- **`Header`**: Top navbar. Contains brand mark, top-level "Giới thiệu" anchor, primary route links ("Hành trình 5 Tốt", "Hoạt động"), "Khám phá" disclosure dropdown (FAQ, Liên hệ), and action CTA. Responsive disclosure hamburger on mobile.
-- **`Footer`**: Direct 4-column desktop grid (`1.8fr 1fr 1.25fr 1.35fr`) with bounded logo ($44 \times 44$px), notice card for unannounced socials, and back-to-top button; 2-column mobile layout.
-- **`AppShell`**: Shell wrapper handling route changes, `document.title`, dynamic meta description, Lenis lifecycle, and hash target scrolling.
-
-### UI & Utility Components
-- **`AccessibleModal`**: Standardized dialog with `role="dialog"`, `aria-modal="true"`, focus trapping (`tabIndex`), body scroll-lock, and `Escape` key close.
-- **`ScrollReveal`**: Motion-based reveal component using `IntersectionObserver` with `framerEase = [0.16, 1, 0.3, 1]`. Automatically disables translation when `prefers-reduced-motion` is active.
-- **`AffiliationMarquee`**: Infinite CSS-animated ticker showcasing student association emblems. Each of its two identical animation cycles contains three logo-strip copies and uses one shared responsive gap token, keeping the loop filled and the seam evenly spaced.
-- **`PageIntro`**: Uniform page banner with gradient title, eyebrow tag, and metadata badges.
-- **`Toast`**: Transient bottom-center notification with timer collision protection.
-
-### Feature Subsystems
-- **`JourneyMap`**: Root state orchestrator for the criteria roadmap. Renders `JourneyConstellation` on desktop ($\ge 769$px) or `JourneyMobileTrack` on mobile ($\le 768$px) alongside `JourneyPanel` (keyed by `criterion.id` for clean unmount/remount state reset).
-- **`JourneyPanel`**: Criteria detail sidebar containing definition, conditions, club support, roadmap steps, checklist, and action CTAs.
-- **`ContactForm`**: Simulated contact submission form with live validation (`name`, `email`, `message`).
-- **`RegistrationForm`**: Modal event signup form with client validation.
-
----
-
-## 8. State & Data Flow
-
-```mermaid
-flowchart LR
-    URLQuery["URL Params (?item=id, ?criterion=id)"] <--> PageState["ActivitiesPage / JourneyMap"]
-    UserActions["User Clicks (Checklist / Forms)"] --> Hooks["useJourneyProgress / validation.ts"]
-    Hooks --> Storage["LocalStorage (uet5ss:journey-progress:v1)"]
-    Storage --> DerivedState["Overall % / Category %"]
-    DerivedState --> UI["JourneyCoreStar / ProgressRing / JourneyPanel"]
-```
-
-1. **Single Source of Truth for Modals**: `searchParams.get('item')` controls modal visibility in `ActivitiesPage.tsx`. Modals are mutually exclusive (News vs. Event).
-2. **Single Source of Truth for Journey Progress**: `useJourneyProgress.ts` synchronizes checklist toggles with `localStorage.getItem('uet5ss:journey-progress:v1')`. All percentage metrics are derived in pure `useMemo`.
-3. **No External Global State Library**: The project intentionally avoids Redux/Zustand overhead, relying on React Context (`LoadingContext`), React Router (`useSearchParams`), custom hooks, and native browser storage.
-
----
-
-## 9. Styling & Design System
-
-### The 8-Layer CSS Cascade Contract (`src/index.css`)
-Order matters strictly:
-1. `@import "tailwindcss";`
-2. `@import "./styles/tokens.css";` (CSS Variables)
-3. `@import "./styles/animations.css";` (Keyframe definitions)
-4. `@import "./styles/components.css";` (Base cards, buttons, badges)
-5. `@import "./styles/pages.css";` (Page container constraints)
-6. `@import "./styles/journey.css";` (Constellation map, node bodies, checklist styling)
-7. `@import "./styles/theme-5ss.css";` (Bright Dreamy Cosmic color theme overrides)
-8. `@import "./styles/responsive.css";` (Breakpoint overrides, 320px to 1024px)
-
-### Design Tokens & Palette:
-- **Base Background**: Deep Cobalt Navy (`--bg: #0b234d`, `--bg-elevated: #12356b`).
-- **Primary Accent**: University Blue (`#2F7BD8`, `#55A8E8`) + Sky Cyan (`#75CFE5`, `#6CD5F7`).
-- **Warm Highlights**: Soft Sun Gold (`#FFD86A`, `#FFE38A`, `#FFD45A`).
-- **Text Palette**: Crisp White (`#ffffff`), Cloud Muted (`#b6def5`), Dim Slate (`#86b8db`).
-- **5 Criteria Identity Colors**:
-  1. Đạo đức: Warm Sun Gold (`#ffd467`)
-  2. Học tập: Sky Cyan (`#6cd5f7`)
-  3. Thể lực: Mint Spring Green (`#5fe3a1`)
-  4. Tình nguyện: Coral Orange (`#ff8b72`)
-  5. Hội nhập: Lavender Violet (`#b794f6`)
-- **Typography**:
-  - Headings: `"Baloo 2", "Be Vietnam Pro", sans-serif`
-  - Body: `"Be Vietnam Pro", Inter, sans-serif`
-- **Responsive Breakpoint Standard**: Mobile boundary is strictly **`768px`** (matches `@media (max-width: 768px)` in CSS and `useIsMobile(768)` in JS).
-
----
-
-## 10. 3D & Animation Architecture
-
-### Three.js Scenes (`src/three/scenes/`)
-1. **`HeroGalaxyScene.tsx`**:
-   - **Camera**: Perspective camera at `position: [0, 0, 5.2]` desktop / `5.8` mobile, with `fov: 46` desktop / `52` mobile.
-   - **Objects**: Extruded 3D glossy physical star (`CentralStar`), glowing octahedron core diamond, ambient particle field (`Stars`, `Sparkles`), orbiting criteria labels.
-   - **Interaction**: Mouse parallax via `PointerRig` with `THREE.MathUtils.damp`.
-   - **Optimization**: Visibility tracked via `IntersectionObserver`. When offscreen or in reduced-motion mode, `frameloop` flips to `"demand"`, halting GPU RAF execution. `PerformanceMonitor` can lower DPR to `1` and raise it to `1.5`; mobile reduces particles and disables antialiasing. Desktop uses a small CSS canvas overscan plus aspect-aware assembly scaling so projected orbit halos remain inside the WebGL drawing buffer at narrow two-column widths.
-2. **`Criteria3DScene.tsx`**:
-   - **Camera**: Perspective camera at `position: [0, 0, 4.4]` desktop / `4.8` mobile, with `fov: 46` desktop / `50` mobile.
-   - **Objects**: Rotating pentagon constellation wireframe + 5 criteria sphere nodes + glowing central diamond.
-   - **Interaction**: Smooth rotational damping targeting active criterion index (`targetRotationY * 0.45`).
-   - **Optimization**: `IntersectionObserver` with `rootMargin: '160px'`. Offscreen `frameloop="demand"`. Mobile renders fewer sparkles (8 vs 18) and lower sphere subdivision (16 vs 24). Includes `CriteriaSceneBoundary` fallback for WebGL-disabled devices.
-
-### Motion Animations
-- **Framer Signature Ease**: `[0.16, 1, 0.3, 1]` for smooth, non-bouncy physical transitions.
-- **Accessibility**: All infinite rotation loops, particle pulses, blur slides, and forced smooth scroll behaviors automatically disable when `prefers-reduced-motion: reduce` is active.
-
----
-
-## 11. APIs & External Services
-
-- **Backend Status**: Pure Client-Side Static Website (Serverless).
-- **Forms**: `ContactForm` and `RegistrationForm` validate locally and show explicit simulated-success states. They do not send or retain personal data.
-- **External Links**:
-  - Facebook, TikTok, email, phone, recruitment URL, and UET email domain are intentionally `null` placeholders in config until the CLB confirms official values.
-  - The campus address is `144 Xuân Thủy, Cầu Giấy, Hà Nội`; the map remains a styled placeholder because no verified map URL is configured.
-  - Fonts: Google Fonts CDN (`Be Vietnam Pro` & `Baloo 2` preconnected in `index.html`).
-
----
-
-## 12. Important Dependencies
-
-```json
-{
-  "dependencies": {
-    "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.7.0",
-    "@react-three/postprocessing": "^3.1.1",
-    "lenis": "^1.3.26",
-    "lucide-react": "^1.37.0",
-    "motion": "^13.1.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3",
-    "three": "^0.180.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@types/three": "^0.180.0",
-    "@vitejs/plugin-react": "^6.1.0",
-    "oxlint": "^1.79.0",
-    "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.2"
-  }
-}
-```
-
----
-
-## 13. Configuration & Build Setup
-
-- **`vite.config.ts`**:
-  - Plugins: `@vitejs/plugin-react`, `@tailwindcss/vite`.
-  - Server: `host: true` (enables testing across LAN/mobile hotspots), `port: 5173`.
-  - Rolldown Chunk Splitting: Dedicated chunk groups for `three-core` (maxSize 420KB) and `three-react` (maxSize 420KB) to ensure sub-1s production builds.
-- **`tsconfig.app.json`**: Strict TypeScript configuration with `noEmit: true`, `jsx: react-jsx`, and ES2023 target/library.
-- **`vercel.json`**: Universal rewrite `/(.*) -> /index.html` to support direct deep linking on refresh.
-- **`index.html`**: Preconnects Google Fonts, configures OpenGraph / Twitter cards, sets theme color `#0B234D`, and references favicon `/assets/sv5t-mark.png?v=2`.
-
----
-
-## 14. Coding Conventions
-
-- **Component Structure**: Named exports for components (`export function Header()`), default export only for root `App.tsx`.
-- **Typing**: Strict TypeScript types; avoid `any`. Use `type` or `interface` with clear property documentation.
-- **File Naming**:
-  - Components/Pages: PascalCase (`JourneyConstellation.tsx`, `HomePage.tsx`).
-  - Hooks: camelCase starting with `use` (`useIsMobile.ts`, `useJourneyProgress.ts`).
-  - Utils/Data/Config: camelCase (`site.ts`, `journeyCoordinates.ts`, `validation.ts`).
-- **Brand Capitalization**: Always use the official title casing: **"Sinh viên 5 Tốt"** and **"Hành trình 5 Tốt"**.
-- **Button Token Classes**: Use `.btn .btn--primary` and `.btn .btn--outline` uniformly across all views.
-- **No Mock API Side Effects**: When building demo forms, provide honest UI notices ("Bản mô phỏng") rather than deceptive fake server success messages.
-
----
-
-## 15. Current Implementation Status
-
-- [x] **Header & Navigation**: Top-level "Giới thiệu" anchor + Routes + Disclosure "Khám phá" dropdown + Mobile drawer menu.
-- [x] **Loading System**: Monotonic 0–100% loader on every full page load/F5, with a hard readiness deadline, inert background shell, and cinematic hero reveal; client-side route changes do not replay it.
-- [x] **Hero Section**: 3D galaxy scene, slogan, interactive orbit labels, responsive composition.
-- [x] **About Section**: Mission, 4 core values, club president quote & avatar.
-- [x] **Criteria Section**: Real-time 3D constellation stage, stage info card, criteria switcher.
-- [x] **Journey Map**: 2D constellation map with normalized coordinate grid (1000x640), mobile vertical track, criterion accordion panel (keyed state), LocalStorage checklist persistence.
-- [x] **Activities Page**: Category filter tabs, event status filters (`all`, `upcoming`, `past`), Empty State fallback UI, URL-synced modal sheets (`?item=id`).
-- [x] **FAQ & Contact**: Accordion FAQ + honest simulated contact form + university address.
-- [x] **Footer**: Direct 4-column desktop / 2-column mobile compact layout.
-- [x] **Accessibility (A11y)**: Full reduced-motion support, keyboard focus traps, W3C disclosure navigation.
-
----
-
-## 16. Important Relationships
+Dependency direction:
 
 ```text
-Header.tsx ──(depends on)──> site.ts (aboutNavigation, primaryNavigation, exploreNavigation)
-                          ──> utils/navigation.ts (navigateToSection, navigateToHomeTop)
-                          ──> LoadingContext.tsx (isLoaded, isExiting)
-
-JourneyMap.tsx ──(depends on)──> data/journey.ts (journeyCriteria, journeyStorageKey)
-                             ──> journeyCoordinates.ts (JOURNEY_COORDINATES)
-                             ──> useJourneyProgress.ts (LocalStorage state)
-                             ──> JourneyPanel.tsx (Keyed by criterion.id for clean unmount/remount)
-                             ──> useMediaQuery.ts (Breakpoint switcher)
-
-ActivitiesPage.tsx ──(depends on)──> data/activities.ts (newsList, eventsList)
-                                 ──> useSearchParams (URL source of truth for modals)
-
-Three.js Scenes ──(depends on)──> useReducedMotion.ts + useIsMobile.ts (frameloop control)
+@5ss/contracts ─────► @5ss/client ─────► browser
+       │                    │ REST + Socket.IO
+       └────────────► @5ss/server ─────► PostgreSQL
+                              └────────► local upload directory (development)
 ```
 
----
+### Workspace boundaries
 
-## 17. Sensitive / High-Impact Areas
+- Client code imports source through the `@/*` alias and shared API/domain types through `@5ss/contracts`.
+- Server feature code lives under `server/src/modules/*`. Cross-module relative imports must follow that structure.
+- Database migrations live under `server/src/database/migrations/*`. The TypeORM CLI reads compiled files from `server/dist/database/migrations/*.js`.
+- `@5ss/contracts` exports games, sessions, starprints, and Sky contracts. Keep request/response/event shape changes synchronized there before adapting both consumers.
+- Do not move generated `dist/` output or runtime `uploads/` into source control.
 
-1. **`src/styles/theme-5ss.css` & `src/styles/responsive.css`**:
-   - Contains delicate responsive calculations, glassmorphism filters, and mobile drawer heights. Do not introduce raw fixed widths or alter base margins without checking mobile 320px–430px viewports.
-   - Grid children in the Homepage Criteria experience must keep `min-width: 0`; selected/hover translations are disabled at `max-width: 768px` to avoid clipped content at 320–360px.
-2. **`src/features/journey/journeyCoordinates.ts`**:
-   - Source of truth for 2D constellation SVG lines, center core star, and planetary node anchor percentages. Changing coordinates here alters both desktop SVG connections and HTML overlay positioning.
-3. **`src/components/loading/LoadingScreen.tsx`**:
-   - Controls application startup. Any dependency on changing reactive props inside the main loading session loop can cause progress stutters or effect restarting. Maintain ref-based asset tracking.
-   - Preserve the hard readiness deadline. The loader intentionally replays on every full document load/F5, but must not replay during ordinary client-side route navigation.
-4. **`src/pages/ActivitiesPage.tsx`**:
-   - Modal visibility is directly bound to `searchParams`. Ensure bidirectional URL synchronization is preserved when adding new activity items.
+## 3. Root commands and build outputs
 
----
+| Root command | Scope |
+| --- | --- |
+| `npm run dev:client` | Vite development server for `@5ss/client` |
+| `npm run dev:server` | Nest watch server for `@5ss/server` |
+| `npm run build` | Contracts, then client, then server |
+| `npm run build:contracts` | `packages/contracts/dist/` |
+| `npm run build:client` | `client/dist/` |
+| `npm run build:server` | `server/dist/` |
+| `npm run typecheck` | All workspace typecheck scripts with `--if-present` |
+| `npm run lint` | All workspace lint scripts with `--if-present` |
+| `npm test` | Server Jest suite |
+| `npm run preview` | Client production preview |
 
-## 18. Known Issues / Technical Debt
+Server-only runtime/migration scripts are invoked through the workspace, for example:
 
-- **`@react-three/postprocessing` Dependency**: Installed in `package.json` but bloom is disabled in current scenes for mobile performance. Kept in dependencies for future shader effects.
-- **Form Submissions**: Form handlers currently simulate client-side delivery. When a real backend (e.g. Google Sheets API / Supabase / Express) is integrated, `ContactForm.tsx` and `RegistrationForm.tsx` should be connected via `fetch()` services.
-- **Repository Metadata**: Git metadata is currently available; inspect `git status` and preserve unrelated working-tree changes before editing.
-- **Lint Warnings**: Oxlint currently reports non-blocking React warnings for effect-driven external-state synchronization and files that export both components and hooks/helpers. TypeScript and production build remain clean; address these only in a dedicated refactor to avoid changing validated UI behavior.
+```powershell
+npm --workspace @5ss/server run start:prod
+npm --workspace @5ss/server run migration:run
+```
 
----
+The migration scripts reference compiled JavaScript. Run `npm run build:server` before them.
 
-## 19. Rules for Future AI Agents
+## 4. Client architecture
 
-1. **Do Not Break the Visual Identity**: Maintain the **Bright Dreamy Cosmic** art direction (Cool University Blue, Soft Sun Gold, Sky Cyan/Mint, Deep Cobalt background). Do not reintroduce harsh pink/coral dominance or neon yellow fills.
-2. **Reuse Existing Components & Helpers**: Use `AccessibleModal` for dialogs, `ScrollReveal` for scroll triggers, and `navigateToSection()` for anchor links. Do not create competing navigation or modal systems.
-3. **Preserve Single Sources of Truth**:
-   - Navigation links $\rightarrow$ `src/config/site.ts`
-   - Criteria data $\rightarrow$ `src/data/journey.ts`
-   - Coordinate map $\rightarrow$ `src/features/journey/journeyCoordinates.ts`
-   - Address & Contact $\rightarrow$ `src/config/contact.ts`
-4. **Respect Reduced Motion**: Always wrap infinite animations or intensive WebGL float rotations with `useReducedMotion()`.
-5. **Enforce 768px Breakpoint Consistency**: Always align JavaScript media queries with `@media (max-width: 768px)`.
-6. **Verify Before Finishing**: Always execute `npm run typecheck`, `npm run lint`, and `npm run build` after modifications. Ensure 0 errors.
+### Stack
 
----
+- React/React DOM 19.2
+- Vite 8.2 and TypeScript 6.0
+- React Router 7.18
+- Zustand 5 with `sessionStorage` persistence for STARPRINT
+- Motion 13 and Lenis 1.3
+- Tailwind CSS 4 plus repository CSS files
+- Three.js 0.180, React Three Fiber 9.7, Drei 10.7, and postprocessing
+- Socket.IO Client 4.8
+- Oxlint
 
-## 20. Quick Context for New AI (30-Second Summary)
+### Routing
+
+`client/src/app/App.tsx` owns all routes and lazy-loads the three STARPRINT/Sky pages.
+
+| Path | Shell | Component | URL state |
+| --- | --- | --- | --- |
+| `/` | `MarketingShell` | `marketing/pages/HomePage` | Home anchors: `#gioi-thieu`, `#hanh-trinh`, `#starprint-showcase`, `#hoat-dong-noi-bat`, `#faq`, `#lien-he` |
+| `/hanh-trinh-5-tot` | `MarketingShell` | `features/journey/pages/JourneyPage` | `?criterion=<id>`; valid IDs are `dao-duc`, `hoc-tap`, `the-luc`, `tinh-nguyen`, `hoi-nhap` |
+| `/hoat-dong` | `MarketingShell` | `features/activities/pages/ActivitiesPage` | `?item=<news-or-event-id>` opens the matching modal |
+| `/starprint` | `GameShell` | `features/starprint/pages/StarprintPage` | `?new=1` resets persisted game state, then replaces the URL |
+| `/starprint/result/:id` | `GameShell` | `features/starprint/pages/StarprintResultPage` | `:id` is the server STARPRINT UUID |
+| `/sky` | `GameShell` | `features/starprint/pages/SkyPage` | Local 3D/grid view state |
+| `*` | `MarketingShell` | `app/routes/NotFoundPage` | Not found |
+
+Do not revive the stale pre-refactor route or path names `src/*`, `?news=`, or `?event=` in documentation. The activities page uses one `item` parameter.
+
+### Shell and loading contracts
+
+- `MarketingShell` owns Header, Footer, the skip link, page title/description changes, Lenis, and hash scrolling with an 80px offset.
+- `GameShell` is minimal and supplies the reduced-motion data attribute.
+- The cinematic `LoadingScreen` is shown only while marketing routes initialize. `/starprint*` and `/sky` bypass it.
+- STARPRINT, result, Sky, and the 3D Sky scene are lazy chunks.
+
+### Client state and data
+
+| Concern | Source of truth | Persistence |
+| --- | --- | --- |
+| Marketing/site metadata | `client/src/config/site.ts` | Source file |
+| Contact/location channels | `client/src/config/contact.ts` | Source file; links are currently null placeholders |
+| About/FAQ | `client/src/marketing/data/*` | Source files; demo copy |
+| Activities/events | `client/src/features/activities/data/activities.ts` | Source file; demo content |
+| Journey content | `client/src/features/journey/data/journey.ts` | Source file; advisory/demo content |
+| Journey checklist | `journey-progress.repository.ts` | `localStorage` key `uet5ss:journey-progress:v1` |
+| STARPRINT browser session | `useStarprintStore.ts` | `sessionStorage` key `starprint-session`, partial state only |
+| STARPRINT authoritative progress | Server session/game records | PostgreSQL |
+| Activity/journey selection | URL search parameters | Browser history |
+| Public Sky | REST snapshot plus `star.created` | React state |
+
+The STARPRINT store persists session ID, nickname, current step, completed game IDs, and selected color. On reload the page calls `GET /api/sessions/:id`; generated or published sessions redirect to their result, while incomplete sessions reconcile to the next game.
+
+`submitGameWithReconciliation()` handles a lost successful response by fetching the session and accepting the game as completed when the server already stored it.
+
+### Forms and content status
+
+- `contact.service.ts` and `registration.service.ts` are simulated delay adapters. They do not send data to the server.
+- Activities, dates, locations, registration availability, images, and much of the marketing prose are explicitly illustrative.
+- `siteConfig.demoMode` is `true`.
+- Recruitment URL, social/email/phone links, and map URL are not confirmed.
+- The journey disclaimer states that the guidance does not replace official Hội Sinh viên requirements.
+
+### Styling, motion, and 3D
+
+`client/src/index.css` defines a sensitive import order:
 
 ```text
-- Project: 5SS UET (Sinh viên 5 Tốt - VNU University of Engineering & Technology).
-- Stack: React 19 + TypeScript + Vite + Tailwind CSS v4 + Motion + Three.js / R3F + Lenis.
-- Art Direction: Bright Dreamy Cosmic (Cobalt Blue #0b234d, University Blue #2f7bd8, Soft Gold #ffd467, Cyan #75cfe5).
-- Structure: SPA with 4 routes (/, /hanh-trinh-5-tot, /hoat-dong, 404).
-- Key Feature 1: 5 Criteria Gamified Journey Map with LocalStorage checklist sync (uet5ss:journey-progress:v1).
-- Key Feature 2: 3D Hero Galaxy & 3D Criteria Scene with automatic offscreen frameloop demand throttling.
-- Key Feature 3: Deep-linked modal dialogs synced with URL search params (?item=id) + Empty state views.
-- Navigation: Desktop header with Logo (Home top), Giới thiệu (/#gioi-thieu), Routes, and Khám phá (FAQ/Contact dropdown).
-- Loading: short cinematic intro on every full page load/F5; client-side route changes do not replay it. Background app is inert during the intro.
-- Responsive Standard: 768px breakpoint boundary. Zero horizontal scroll on 320px–1920px.
-- Build Verification: npm run typecheck && npm run build && npm run lint.
+tailwindcss
+→ tokens.css
+→ animations.css
+→ components.css
+→ pages.css
+→ journey.css
+→ theme-5ss.css
+→ responsive.css
+→ starprint.css
+→ base/layout rules in index.css
 ```
+
+Preserve this order unless a deliberate cascade migration accompanies the change.
+
+Three.js scenes are separated by concern:
+
+- `client/src/three/marketing/HeroGalaxyScene.tsx` — homepage hero.
+- `client/src/three/marketing/Criteria3DScene.tsx` — five-criteria visualization.
+- `client/src/three/starprint/StarSkyScene.tsx` — public community sky.
+
+The Sky defaults to its grid view for users who prefer reduced motion. Interactive UI must retain semantic HTML, keyboard behavior, visible focus, mobile safe areas, and non-WebGL fallbacks.
+
+## 5. Shared contracts
+
+`packages/contracts/src/index.ts` re-exports:
+
+- `games`: `GameId`, submit request/response, and the five IDs.
+- `sessions`: create/response shapes and lifecycle status union.
+- `starprints`: generation/publication/result shapes, palette, type, and effect.
+- `sky`: public star and `star.created` event envelope.
+
+The package points TypeScript consumers to `src/index.ts` and runtime consumers to `dist/index.js`. Current imports are type-only, but the root build still emits the package before its consumers.
+
+Contract status values:
+
+```text
+IN_PROGRESS → READY_TO_GENERATE → GENERATED → PUBLISHED
+```
+
+Game IDs in the contract are a union and are not ordered. The server service and client store separately enforce the current demo sequence:
+
+```text
+solve → sense → sprint → support → sync
+```
+
+## 6. Server architecture
+
+### Stack
+
+- NestJS 11 with Express
+- TypeScript 5.7 compilation target
+- TypeORM 0.3 with PostgreSQL
+- class-validator/class-transformer and a global strict `ValidationPipe`
+- Swagger 11 at `/api/docs`
+- Socket.IO 4.8
+- Sharp 0.35
+- Jest 29 and ts-jest
+
+### Bootstrap and cross-cutting behavior
+
+`server/src/main.ts`:
+
+- loads `AppModule`;
+- configures credentialed CORS through `buildCorsOriginMatcher`;
+- strips unknown properties and rejects non-whitelisted DTO fields;
+- installs `DomainExceptionFilter`;
+- serves the configured local media directory at `/uploads`;
+- publishes Swagger at `/api/docs`;
+- listens on `PORT`, default 3000.
+
+In production, CORS accepts exact comma-separated `CLIENT_ORIGIN` values. In non-production it additionally permits localhost, loopback, and RFC1918 private IPv4 origins for LAN booth testing.
+
+### Modules
+
+| Module | Location | Responsibility |
+| --- | --- | --- |
+| Sessions | `server/src/modules/sessions` | Create/restore player sessions, update photo/status |
+| Games | `server/src/modules/games` | Enforce demo sequence, validate current raw-result shapes, persist one result per game, aggregate scores |
+| Uploads | `server/src/modules/uploads` | Accept up to 5 MB JPEG/PNG/WebP, auto-orient/resize inside 1024×1024, encode WebP quality 85, save locally |
+| Starprints | `server/src/modules/starprints` | Generate palette/type/profile, persist once per session, fetch, publish with consent |
+| Sky | `server/src/modules/sky` | Return consent-filtered public stars and broadcast `star.created` |
+
+Generation and publication each use a TypeORM QueryRunner transaction to save the STARPRINT state and corresponding session status together. Publication emits the Socket.IO event only after the transaction commits.
+
+### REST and real-time surface
+
+| Method | Path | Current contract |
+| --- | --- | --- |
+| `POST` | `/api/sessions` | `CreateSessionRequest → SessionResponse` |
+| `GET` | `/api/sessions/:id` | `SessionResponse` |
+| `POST` | `/api/sessions/:sessionId/photo` | Multipart field `file → { photoUrl }` |
+| `POST` | `/api/sessions/:sessionId/games/:gameId` | `SubmitGameRequest → SubmitGameResponse` |
+| `POST` | `/api/starprints/generate` | `GenerateStarprintRequest → StarprintResponse` |
+| `GET` | `/api/starprints/:id` | `StarprintResponse` |
+| `POST` | `/api/starprints/:id/publish` | `PublishStarprintRequest → { success: true }` |
+| `GET` | `/api/sky` | `SkyStar[]`, newest first |
+| Socket.IO | `star.created` | `SkyStarCreatedEvent` |
+
+### Persistence model
+
+The initial migration creates:
+
+- `player_sessions` — nickname, optional photo URL, status, timestamps.
+- `game_results` — session FK, enum game ID, JSONB raw result, timestamp, unique session/game pair.
+- `starprints` — unique session FK, base color, JSONB palette/profile, type/effect, publication and consent flags, timestamps.
+
+Both child tables cascade when their session is deleted. `synchronize` and automatic migration execution are disabled.
+
+### Current STARPRINT rules are demo rules
+
+The server is authoritative about the current implementation:
+
+- it accepts games only in the current five-step order;
+- it validates IDs, bounds, and shapes defined in `raw-result-validator.ts`;
+- it requires all five stored results before generation;
+- it stores only one result per game and one STARPRINT per session;
+- it calculates a bounded five-dimension profile, selects the dominant demo archetype, and creates a deterministic palette;
+- it filters public nickname/photo fields using independent consent flags.
+
+This authority protects state integrity; it does **not** make the questions, scenarios, timings, weights, profile dimensions, tie order, archetypes, labels, or visual effects approved business rules.
+
+## 7. Environment and networking
+
+### Client: `client/.env`
+
+| Variable | Behavior |
+| --- | --- |
+| `VITE_API_URL` | REST base including `/api`. The example uses `http://localhost:3000/api`. If unset, the shared HTTP client derives the page hostname with port 3000. |
+| `VITE_MEDIA_URL` | Optional explicit media origin implemented by the HTTP helper, but missing from the example template. |
+
+`SkyPage` derives its Socket.IO origin directly from `VITE_API_URL` and otherwise falls back to localhost. Therefore LAN and production builds should always provide `VITE_API_URL` explicitly.
+
+### Server: `server/.env`
+
+| Variable | Default |
+| --- | --- |
+| `PORT` | `3000` |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/5ss` |
+| `CLIENT_ORIGIN` | `http://localhost:5173` |
+| `MEDIA_STORAGE` | `local` |
+| `MEDIA_LOCAL_DIR` | `uploads` |
+
+`MEDIA_STORAGE` is not yet an adapter switch: `UploadsModule` always injects `LocalMediaStorage`.
+
+## 8. Local development and database workflow
+
+From the repository root:
+
+```powershell
+npm install
+Copy-Item client/.env.example client/.env
+Copy-Item server/.env.example server/.env
+npm run build:contracts
+npm run build:server
+npm --workspace @5ss/server run migration:run
+```
+
+Then run:
+
+```powershell
+npm run dev:server
+npm run dev:client
+```
+
+The repo has no combined `dev` script. The client defaults to port 5173 and listens on all interfaces. The server defaults to port 3000 and connects to PostgreSQL during application initialization.
+
+## 9. Testing and verification
+
+The current Jest configuration discovers both `*.spec.ts` and `*.e2e-spec.ts` under `server/`.
+
+- `server/test/scoring.spec.ts`: 13 deterministic scoring/type/palette tests.
+- `server/test/app.e2e-spec.ts`: 11 lifecycle tests against a real PostgreSQL connection, including invalid order/payload, duplicate prevention, reload restoration, generation, publication, and consent filtering.
+- Total current test cases: 24.
+- E2E cleanup deletes the created session, relying on database cascades. Use a dedicated migrated non-production database.
+- There are no client component, browser, accessibility automation, or visual-regression tests.
+
+Required repository checks:
+
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+npm --workspace @5ss/server test -- --runInBand
+```
+
+See `docs/testing/README.md` for prerequisites and manual smoke coverage.
+
+## 10. Deployment model
+
+`npm run build` produces:
+
+- `packages/contracts/dist/`;
+- `client/dist/`, a static SPA;
+- `server/dist/`, a long-running Node service.
+
+Current repository support:
+
+- `client/vercel.json` rewrites all client routes to `index.html`.
+- `server/package.json` provides `start:prod` as `node dist/main`.
+- Database migration scripts are available, but they are not run automatically.
+
+Production gaps:
+
+- no Dockerfiles, process manager, health endpoint, CI/CD, infrastructure-as-code, or backend hosting config;
+- no managed database or backup configuration;
+- no durable media adapter/CDN; local disk can disappear on ephemeral hosts;
+- no authentication, authorization, rate limiting, moderation, or admin workflow;
+- no provider-specific monorepo build configuration has been validated.
+
+A provider must install at the repository root, build workspace dependencies, host `client/dist` with an SPA fallback, run `server/dist/main.js` on a WebSocket-capable service, supply PostgreSQL, run migrations, and configure client/server origins.
+
+## 11. Confirmations and technical debt
+
+### TODO GAME DESIGN CONFIRMATION
+
+Do not finalize without organizer/BA approval:
+
+1. SOLVE question bank, answer keys, timer, difficulty, and scoring.
+2. SENSE scenarios, language, choices, and five-dimensional vectors.
+3. SPRINT duration, physics, spawn rates, collision rules, and scoring.
+4. SUPPORT layouts, path rules, time/rotation scoring, and fallback behavior.
+5. SYNC cards, pair count, cooldown, mismatch behavior, and scoring.
+
+### TODO BUSINESS CONFIRMATION
+
+1. The five archetype names, descriptions, dimensions, thresholds, and tie behavior.
+2. Archetype-to-effect mapping (`flow`, `shimmer`, `spark`, `orbit`, `pulse`).
+3. Whether/how STARPRINT results should be framed to users.
+4. Official club copy, milestones, leader information/media, social links, email, phone, recruitment link, and map.
+5. Official journey criteria, evidence rules, recognized activities, and disclaimers.
+6. Real event data, registration policy, privacy notice, retention, and consent language.
+
+### Engineering debt/placeholders
+
+1. Local-only media storage; `MEDIA_STORAGE` does not select an adapter.
+2. `VITE_MEDIA_URL` is supported but absent from `client/.env.example`.
+3. Sky Socket.IO fallback is localhost rather than the HTTP helper's LAN-aware fallback.
+4. Simulated contact/registration adapters.
+5. No automated client tests.
+6. Server compiler options are permissive compared with the strict contracts/client packages.
+7. E2E tests use the configured database rather than provisioning an isolated database automatically.
+8. Deployment configuration covers only a client-side Vercel history rewrite.
+
+## 12. Sensitive files and change map
+
+| Concern | Primary locations |
+| --- | --- |
+| Router/shell isolation | `client/src/app/App.tsx`, `client/src/app/shells/*` |
+| Marketing navigation and metadata | `client/src/config/site.ts`, `client/src/marketing/components/layout/*` |
+| Contact placeholders | `client/src/config/contact.ts`, `client/src/marketing/sections/Contact/*` |
+| Journey data and local persistence | `client/src/features/journey/data/journey.ts`, `journey-progress.repository.ts` |
+| Activity demo data/modal URL | `client/src/features/activities/data/activities.ts`, `pages/ActivitiesPage.tsx` |
+| STARPRINT state and reconciliation | `client/src/features/starprint/store/useStarprintStore.ts`, `services/gameSubmission.ts` |
+| Client REST/media origin | `client/src/shared/services/http/apiClient.ts` |
+| CSS cascade | `client/src/index.css` and `client/src/styles/*` |
+| 3D scenes | `client/src/three/marketing/*`, `client/src/three/starprint/*` |
+| Public contracts | `packages/contracts/src/*` |
+| Server lifecycle | `server/src/modules/sessions/*`, `games/*`, `starprints/*` |
+| Demo rule validation/scoring | `server/src/modules/games/validation/*`, `scoring/*`, `questions/*` |
+| Transactions/privacy broadcast | `server/src/modules/starprints/starprints.service.ts`, `server/src/modules/sky/*` |
+| Database schema | `server/src/database/migrations/*`, `database/data-source.ts` |
+| CORS/bootstrap/static media | `server/src/main.ts`, `server/src/common/utils/cors.util.ts` |
+
+## 13. Agent handoff checklist
+
+Before material changes:
+
+1. Read `AGENTS.md` and this file.
+2. Check `git status` and preserve unrelated working-tree changes.
+3. Confirm the relevant source path is under the refactored workspace, not a pre-refactor root path.
+4. Update `@5ss/contracts` first when a public client/server shape changes.
+5. Keep demo/business caveats unless requirements are explicitly approved.
+
+Before finishing:
+
+1. Re-read the changed source and update this context when architecture, behavior, routes, API, data flow, configuration, dependencies, tests, deployment, or technical debt changed.
+2. Run relevant typecheck, lint, build, and tests.
+3. Ensure documentation does not claim placeholder content is official or that local infrastructure is production-ready.

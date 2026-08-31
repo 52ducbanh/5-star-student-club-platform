@@ -1,161 +1,184 @@
-# 5SS UET — Student 5 Good Club Website
+# 5SS UET Website & STARPRINT Platform
 
-An interactive, modern digital brand space and cosmic roadmap ("5SS Galaxy – Hành trình tỏa sáng") for the **Sinh viên 5 Tốt (Student 5 Good)** Club at **VNU University of Engineering and Technology (UET – VNU Hanoi)**.
+5SS UET is a monorepo for the digital presence of the Sinh viên 5 Tốt Club at VNU University of Engineering and Technology. It combines a React marketing site, a local journey checklist, and the server-backed STARPRINT game and community sky experience.
 
----
+> **Current status: functional demo.** Marketing copy, events, forms, contact channels, STARPRINT questions, scoring, archetypes, and visual mappings are provisional. They must not be treated as official club requirements, eligibility guidance, or validated personality assessment rules.
 
-## Project Overview
+## Repository layout
 
-The website guides university students through the 5 criteria of the nationwide "Sinh viên 5 Tốt" movement:
-1. **Đạo đức tốt** (Ethics & Morality)
-2. **Học tập tốt** (Academic & Research)
-3. **Thể lực tốt** (Physical Fitness)
-4. **Tình nguyện tốt** (Volunteering & Community)
-5. **Hội nhập tốt** (Integration & Global Mindset)
+The root package is an npm-workspaces orchestrator.
 
-Key user experiences include:
-- **Hero Galaxy & 3D Interactive Scenes**: Powered by Three.js and React Three Fiber with performance-conscious frame throttling.
-- **Interactive Constellation Journey Map**: Gamified criteria tracker with persistent checklist progress stored in browser `localStorage`.
-- **Activities Archive & Deep-Linked Modals**: Filterable news, workshops, and events with bidirectional URL search parameter synchronization (`?item=id`).
-- **Responsive & Accessible Design**: Crafted for viewports from 320px mobile to ultrawide monitors, adhering to WAI-ARIA and `prefers-reduced-motion` standards.
+| Path | Workspace | Responsibility |
+| --- | --- | --- |
+| `client/` | `@5ss/client` | React 19 SPA, marketing pages, journey UI, STARPRINT UI, 3D scenes |
+| `server/` | `@5ss/server` | NestJS REST API, Socket.IO gateway, PostgreSQL persistence, image processing |
+| `packages/contracts/` | `@5ss/contracts` | Shared TypeScript request, response, event, and domain contracts |
+| `docs/` | — | Architecture, testing notes, and historical implementation prompts |
+| `package.json` | — | Cross-workspace build, check, test, and development commands |
 
----
+See [the architecture guide](docs/architecture/README.md), [the testing guide](docs/testing/README.md), and [the detailed project context](PROJECT_CONTEXT.md).
 
-## Tech Stack
+## User-facing routes
 
-- **Framework**: [React 19](https://react.dev/)
-- **Build Tool**: [Vite 8](https://vitejs.dev/) with Rolldown/ESBuild
-- **Language**: [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
-- **Routing**: [React Router 7](https://reactrouter.com/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) + Custom 8-layer CSS Architecture
-- **3D & WebGL**: [Three.js](https://threejs.org/), [@react-three/fiber](https://r3f.docs.pmnd.rs/), [@react-three/drei](https://github.com/pmndrs/drei)
-- **Animation**: [Motion](https://motion.dev/) (Framer Motion engine)
-- **Smooth Scroll**: [Lenis](https://lenis.darkroom.engineering/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Linter**: [Oxlint](https://oxc.rs/)
+| Route | Shell | Behavior |
+| --- | --- | --- |
+| `/` | Marketing | Homepage. Section anchors include `#gioi-thieu`, `#hanh-trinh`, `#starprint-showcase`, `#hoat-dong-noi-bat`, `#faq`, and `#lien-he`. |
+| `/hanh-trinh-5-tot` | Marketing | Five-criterion journey and browser-local checklist. `?criterion=<id>` selects a criterion. |
+| `/hoat-dong` | Marketing | Demo news and events. `?item=<id>` opens a detail modal. |
+| `/starprint` | Game | STARPRINT workflow. `?new=1` clears the persisted browser session and starts again. |
+| `/starprint/result/:id` | Game | Loads a generated result and offers privacy-controlled publication. |
+| `/sky` | Game | Public stars in a lazy-loaded 3D view or accessible grid, updated through `star.created` Socket.IO events. |
+| Any unmatched path | Marketing | Not-found page. |
 
----
+The marketing shell owns the header, footer, cinematic loader, hash scrolling, and Lenis. The game shell intentionally excludes those concerns.
+
+## Stack
+
+- Client: React 19, TypeScript 6, Vite 8, React Router 7, Zustand, Motion, Tailwind CSS 4, Three.js/React Three Fiber, Lenis, and Socket.IO Client.
+- Server: NestJS 11, TypeScript, TypeORM, PostgreSQL, Socket.IO, Sharp, class-validator, and Swagger.
+- Contracts: strict TypeScript package consumed by both client and server.
+- Tests: Jest/ts-jest unit and full-lifecycle server tests. There is currently no automated client test suite.
 
 ## Prerequisites
 
-Before running the project locally, ensure you have the following installed:
-- **Node.js**: `v18.0.0` or higher (Node.js 20+ LTS recommended)
-- **npm**: `v9.0.0` or higher (comes with Node.js)
+- Node.js `^20.19.0` or `>=22.12.0` (required by Vite 8). The refactor was verified with Node.js 24.
+- npm with workspace support.
+- PostgreSQL for the server and all server integration tests.
 
----
+The marketing routes can be viewed without PostgreSQL, but STARPRINT and 5SS Sky require the server.
 
-## Installation
+## Install and run locally
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd "5SS website"
-   ```
+Run all installs from the repository root:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
----
-
-## Run Development Server
-
-Start the local Vite development server:
-
-```bash
-npm run dev
+```powershell
+npm install
+Copy-Item client/.env.example client/.env
+Copy-Item server/.env.example server/.env
 ```
 
-Once started, open your browser and navigate to:
-- **Local URL**: `http://localhost:5173`
-- **Network URL**: The development server binds to `0.0.0.0` (host: true), allowing you to test on mobile devices connected to the same Wi-Fi network.
+Create the PostgreSQL database named by `server/.env`, then build the compiled TypeORM data source and run the migration:
 
----
-
-## Production Build & Preview
-
-1. Build the production assets:
-   ```bash
-   npm run build
-   ```
-   This runs TypeScript type checking (`tsc -b`) and Vite production bundling into the `dist/` directory with optimized chunk splitting.
-
-2. Preview the production build locally:
-   ```bash
-   npm run preview
-   ```
-   This serves the `dist/` bundle on `http://localhost:4173`.
-
----
-
-## Available Scripts
-
-Defined in `package.json`:
-
-| Command | Description |
-| :--- | :--- |
-| `npm run dev` | Starts the Vite development server with hot module replacement (HMR). |
-| `npm run build` | Compiles TypeScript and builds production-ready static assets in `dist/`. |
-| `npm run typecheck` | Runs the TypeScript compiler (`tsc -b --pretty false`) to verify types without emitting files. |
-| `npm run lint` | Runs the high-performance Oxlint linter across all source files. |
-| `npm run preview` | Spins up a local static server to test the production build output. |
-
----
-
-## Project Structure
-
-```text
-5SS website/
-├── public/                     # Static assets served at root
-│   ├── assets/                 # Brand badges and SV5T marks
-│   └── og-5ss-v2.png           # Social share preview card
-├── src/
-│   ├── assets/                 # Bundled graphics (emblems, SVG strips)
-│   ├── components/             # Reusable UI & layout components
-│   │   ├── layout/             # AppShell, Header, Footer
-│   │   ├── loading/            # LoadingScreen, LoadingStarPentagon
-│   │   └── ui/                 # AccessibleModal, AffiliationMarquee, PageIntro, Toast, etc.
-│   ├── config/                 # Site configuration, navigation hierarchy, contact info
-│   ├── context/                # LoadingContext for smooth intro transitions
-│   ├── data/                   # Content models (journey criteria, activities, FAQ, about)
-│   ├── features/               # Feature-specific state and components
-│   │   ├── activities/         # Event registration form
-│   │   ├── forms/              # Contact form & validation helpers
-│   │   ├── journey/            # 2D Constellation map, mobile track, checklist panel, progress hook
-│   │   └── shared/             # Shared custom hooks (useMediaQuery)
-│   ├── hooks/                  # Global hooks (useIsMobile, useReducedMotion, useScrollProgress)
-│   ├── pages/                  # Page routes (HomePage, JourneyPage, ActivitiesPage, NotFoundPage)
-│   ├── sections/               # Composite sections on the homepage (Hero, About, Criteria, etc.)
-│   ├── styles/                 # 8-layer CSS cascade architecture
-│   │   ├── tokens.css          # Design tokens & color variables
-│   │   ├── animations.css      # Keyframes and animation rules
-│   │   ├── components.css      # Base UI components styling
-│   │   ├── pages.css           # Page layout constraints
-│   │   ├── journey.css         # Constellation roadmap styling
-│   │   ├── theme-5ss.css       # Bright Dreamy Cosmic theme overrides
-│   │   └── responsive.css      # Responsive rules (320px to 1024px)
-│   ├── three/
-│   │   └── scenes/             # Three.js / R3F scenes (HeroGalaxyScene, Criteria3DScene)
-│   ├── utils/                  # Navigation and anchor scroll helpers
-│   ├── App.tsx                 # Root router and layout provider
-│   ├── index.css               # Master stylesheet import entry point
-│   └── main.tsx                # Application bootstrap entry point
-├── .oxlintrc.json              # Oxlint linting rules
-├── index.html                  # HTML entry point with meta tags and Google Fonts
-├── package.json                # Project dependencies and npm scripts
-├── tsconfig.json               # TypeScript project references
-├── tsconfig.app.json           # Application TypeScript compiler options
-├── tsconfig.node.json          # Vite node configuration
-├── vercel.json                 # Single Page Application (SPA) rewrite rules
-└── vite.config.ts              # Vite configuration with Tailwind CSS and Rolldown chunking
+```powershell
+npm run build:contracts
+npm run build:server
+npm --workspace @5ss/server run migration:run
 ```
 
----
+Start the two applications in separate terminals:
 
-## Notes & Implementation Details
+```powershell
+npm run dev:server
+```
 
-- **Client-Side SPA Architecture**: The application is a pure client-side static web app and does not require a dedicated backend server to run.
-- **Demo / Simulation Data**: Forms (e.g., Contact Form, Event Registration) execute simulated client-side submission flows with realistic feedback banners. No personal data is sent to or stored on an external server.
-- **LocalStorage Persistence**: Student progress in the Journey Map is stored locally under the key `uet5ss:journey-progress:v1`. Resetting or clearing browser storage will reset checklist marks to 0%.
-- **Single Source of Truth**: Detailed architectural documentation and coding guidelines are maintained in `PROJECT_CONTEXT.md`.
+```powershell
+npm run dev:client
+```
+
+Default local URLs:
+
+- Client: `http://localhost:5173`
+- API and Socket.IO server: `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/api/docs`
+
+For phone or LAN testing, set `VITE_API_URL` to the server address reachable by that device. Vite listens on all interfaces; development CORS permits localhost and private-LAN origins.
+
+## Environment variables
+
+Client variables belong in `client/.env` and are embedded by Vite at build time.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `VITE_API_URL` | Recommended | REST base URL including `/api`. Example: `http://localhost:3000/api`. If empty, the HTTP client derives port 3000 from the page hostname. Set it explicitly outside simple local development. |
+| `VITE_MEDIA_URL` | Optional | Separate public media origin. The code supports it, but it is not yet listed in `client/.env.example`. Otherwise the origin is derived from `VITE_API_URL`. |
+
+Server variables belong in `server/.env` and are read at runtime.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `3000` | HTTP and Socket.IO port |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/5ss` | PostgreSQL connection |
+| `CLIENT_ORIGIN` | `http://localhost:5173` | Comma-separated allowed production origins; development additionally accepts private-LAN origins |
+| `MEDIA_STORAGE` | `local` | Reserved storage selection setting; the current module still wires only the local adapter |
+| `MEDIA_LOCAL_DIR` | `uploads` | Server-relative directory for processed WebP files |
+
+Do not commit either `.env` file.
+
+## Root scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev:client` | Starts Vite for `@5ss/client` |
+| `npm run dev:server` | Starts NestJS in watch mode for `@5ss/server` |
+| `npm run build` | Builds contracts, client, then server |
+| `npm run build:contracts` | Emits `packages/contracts/dist/` |
+| `npm run build:client` | Type-checks and builds `client/dist/` |
+| `npm run build:server` | Builds `server/dist/` |
+| `npm run typecheck` | Runs every workspace typecheck script |
+| `npm run lint` | Runs every workspace lint script |
+| `npm test` | Runs the server Jest suite |
+| `npm run preview` | Serves the existing client production build locally |
+
+Additional server commands:
+
+```powershell
+npm --workspace @5ss/server run start:prod
+npm --workspace @5ss/server run migration:run
+```
+
+The migration scripts execute the compiled `server/dist/database/data-source.js`, so build the server before running them.
+
+## Build, test, and verify
+
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+npm --workspace @5ss/server test -- --runInBand
+```
+
+The server tests require a migrated PostgreSQL database through `DATABASE_URL`. Use a dedicated non-production database. See [docs/testing/README.md](docs/testing/README.md) for test coverage and smoke checks.
+
+## API summary
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/sessions` | Create a player session |
+| `GET` | `/api/sessions/:id` | Restore session progress and generated result ID |
+| `POST` | `/api/sessions/:sessionId/photo` | Upload JPEG, PNG, or WebP; process to WebP |
+| `POST` | `/api/sessions/:sessionId/games/:gameId` | Validate and store the next demo game result |
+| `POST` | `/api/starprints/generate` | Generate one STARPRINT after all five games |
+| `GET` | `/api/starprints/:id` | Fetch a result |
+| `POST` | `/api/starprints/:id/publish` | Publish with name/photo consent flags |
+| `GET` | `/api/sky` | List public stars with consent filtering |
+
+Game submissions currently follow `solve → sense → sprint → support → sync`. The server validates order and the current payload shapes, then deterministically derives a demo profile, palette, archetype, and effect. These mechanics are implementation defaults pending business and game-design approval.
+
+## Deployment
+
+The repository produces three build outputs:
+
+- `packages/contracts/dist/` — shared package JavaScript/declarations
+- `client/dist/` — static SPA assets
+- `server/dist/` — long-running Node/NestJS service
+
+A production deployment needs:
+
+1. A static host for `client/dist/` with SPA history fallback. `client/vercel.json` contains the current catch-all rewrite.
+2. A Node host that supports persistent Socket.IO connections for `server/dist/main.js`.
+3. PostgreSQL with migrations run before the server starts.
+4. Production `VITE_API_URL`, `CLIENT_ORIGIN`, and `DATABASE_URL` values.
+5. Durable object/media storage before relying on uploads. The current local disk adapter is a development placeholder.
+
+There is no backend container, infrastructure-as-code, managed database, or production media-storage configuration in this repository yet. When a provider builds this monorepo, install from the repository root so workspace dependencies resolve, then publish `client/dist/` and run `server/dist/main.js` as separate services.
+
+## Product and business placeholders
+
+- Journey criteria details are suggestions, not official recognition requirements.
+- News, event dates, images, locations, and registration flows are illustrative.
+- Contact links, recruitment URL, map URL, and some club/leader media are not confirmed.
+- Contact and event registration services only simulate submission in the browser.
+- STARPRINT content, scoring weights, archetype names/descriptions, and type-to-effect mapping require BA/club approval.
+- There is no authentication, administration, moderation, or production upload storage.
+
+Do not remove these caveats or finalize a `TODO BUSINESS CONFIRMATION` / `TODO GAME DESIGN CONFIRMATION` item without approved requirements from the club organizers.

@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -7,10 +7,25 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+**/node_modules/
+
+# Production build artifacts
+**/dist/
+**/dist-ssr/
+
+# Uploads and temporary media (runtime data only; source modules remain tracked)
+/uploads/
+/server/uploads/
 *.local
+
+# Environment variables
+**/.env
+**/.env.*
+!**/.env.example
+
+# Test coverage
+**/coverage/
 
 # Editor directories and files
 .vscode/*
