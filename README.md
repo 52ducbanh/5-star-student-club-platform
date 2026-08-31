@@ -90,7 +90,7 @@ Client variables belong in `client/.env` and are embedded by Vite at build time.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `VITE_API_URL` | Recommended | REST base URL including `/api`. Example: `http://localhost:3000/api`. If empty, the HTTP client derives port 3000 from the page hostname. Set it explicitly outside simple local development. |
-| `VITE_MEDIA_URL` | Optional | Separate public media origin. The code supports it, but it is not yet listed in `client/.env.example`. Otherwise the origin is derived from `VITE_API_URL`. |
+| `VITE_MEDIA_URL` | Optional | Separate public media origin (e.g. CDN or S3 bucket). Documented in `client/.env.example`. If left blank, automatically derived from `VITE_API_URL`. |
 
 Server variables belong in `server/.env` and are read at runtime.
 

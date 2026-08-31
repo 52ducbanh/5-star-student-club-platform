@@ -141,8 +141,8 @@ Do not revive the stale pre-refactor route or path names `src/*`, `?news=`, or `
 
 - `MarketingShell` owns Header, Footer, the skip link, page title/description changes, Lenis, and hash scrolling with an 80px offset.
 - `GameShell` is minimal and supplies the reduced-motion data attribute.
-- The cinematic `LoadingScreen` is shown only while marketing routes initialize. `/starprint*` and `/sky` bypass it.
-- STARPRINT, result, Sky, and the 3D Sky scene are lazy chunks.
+- The cinematic `LoadingScreen` is shown only while marketing routes initialize. `/starprint*` and `/sky` bypass it. Its internal progress tracking is decoupled from `@react-three/drei` and driven by font/image/timer progression to ensure zero Three.js footprint on initial boot while maintaining the identical visual UX.
+- STARPRINT, result, Sky, and the 3D Sky scene are lazy chunks. All 3D scenes (`HeroGalaxyScene`, `Criteria3DScene`, `StarSkyScene`) are loaded strictly on demand via `React.lazy` and `<Suspense>`.
 
 ### Client state and data
 
@@ -304,7 +304,7 @@ This authority protects state integrity; it does **not** make the questions, sce
 | Variable | Behavior |
 | --- | --- |
 | `VITE_API_URL` | REST base including `/api`. The example uses `http://localhost:3000/api`. If unset, the shared HTTP client derives the page hostname with port 3000. |
-| `VITE_MEDIA_URL` | Optional explicit media origin implemented by the HTTP helper, but missing from the example template. |
+| `VITE_MEDIA_URL` | Optional explicit media origin (e.g. CDN or S3 bucket). Documented in `client/.env.example`. If left blank, automatically derived from `VITE_API_URL`. |
 
 `SkyPage` derives its Socket.IO origin directly from `VITE_API_URL` and otherwise falls back to localhost. Therefore LAN and production builds should always provide `VITE_API_URL` explicitly.
 
@@ -411,13 +411,12 @@ Do not finalize without organizer/BA approval:
 ### Engineering debt/placeholders
 
 1. Local-only media storage; `MEDIA_STORAGE` does not select an adapter.
-2. `VITE_MEDIA_URL` is supported but absent from `client/.env.example`.
-3. Sky Socket.IO fallback is localhost rather than the HTTP helper's LAN-aware fallback.
-4. Simulated contact/registration adapters.
-5. No automated client tests.
-6. Server compiler options are permissive compared with the strict contracts/client packages.
-7. E2E tests use the configured database rather than provisioning an isolated database automatically.
-8. Deployment configuration covers only a client-side Vercel history rewrite.
+2. Sky Socket.IO fallback is localhost rather than the HTTP helper's LAN-aware fallback.
+3. Simulated contact/registration adapters.
+4. No automated client tests.
+5. Server compiler options are permissive compared with the strict contracts/client packages.
+6. E2E tests use the configured database rather than provisioning an isolated database automatically.
+7. Deployment configuration covers only a client-side Vercel history rewrite.
 
 ## 12. Sensitive files and change map
 

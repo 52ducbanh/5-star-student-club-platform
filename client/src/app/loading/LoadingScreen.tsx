@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'motion/react'
-import { useProgress } from '@react-three/drei'
 import { LoadingStarPentagon } from './LoadingStarPentagon'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { useLoading } from '@/app/providers/LoadingProvider'
@@ -15,7 +14,6 @@ const EXIT_TRANSITION_DURATION = 0.28
 
 export function LoadingScreen() {
   const { startHeroReveal, completeLoading } = useLoading()
-  const { progress: r3fProgress, active: r3fActive } = useProgress()
   const prefersReduced = useReducedMotion()
 
   const [displayProgress, setDisplayProgress] = useState(0)
@@ -28,19 +26,13 @@ export function LoadingScreen() {
   // Stable references to prevent effect restarting
   const minDurationRef = useRef(minDuration)
   const maxAssetWaitRef = useRef(maxAssetWait)
-  const r3fRef = useRef({ progress: r3fProgress, active: r3fActive })
+  const hasTriggeredExit = useRef(false)
+  const isFinishedLoop = useRef(false)
 
   useEffect(() => {
     minDurationRef.current = minDuration
     maxAssetWaitRef.current = maxAssetWait
   }, [maxAssetWait, minDuration])
-
-  useEffect(() => {
-    r3fRef.current = { progress: r3fProgress, active: r3fActive }
-  }, [r3fProgress, r3fActive])
-
-  const hasTriggeredExit = useRef(false)
-  const isFinishedLoop = useRef(false)
 
   // Single persistent animation session on mount
   useEffect(() => {
@@ -76,16 +68,14 @@ export function LoadingScreen() {
       const now = performance.now()
       const elapsed = now - startTime
       const currentMinDuration = minDurationRef.current
-      const { progress: r3fValRaw, active: r3fActiveNow } = r3fRef.current
 
-      // Calculate composite real progress: R3F (70%), Fonts (15%), Images (15%)
-      const r3fVal = r3fActiveNow ? r3fValRaw : 100
-      const fontVal = fontLoaded ? 100 : 30
+      // Calculate composite real progress: Fonts (50%), Images (50%)
+      const fontVal = fontLoaded ? 100 : 40
       const imgVal = imageLoaded ? 100 : 40
-      const compositeReal = r3fVal * 0.7 + fontVal * 0.15 + imgVal * 0.15
+      const compositeReal = fontVal * 0.5 + imgVal * 0.5
 
       // Check if real assets are fully ready
-      const allAssetsReady = (!r3fActiveNow || r3fValRaw >= 100) && fontLoaded && imageLoaded
+      const allAssetsReady = fontLoaded && imageLoaded
 
       // Time-based progression percentage (0 to 100 over minDuration)
       const timePercent = Math.min(100, (elapsed / currentMinDuration) * 100)

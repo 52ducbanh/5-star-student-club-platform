@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import sharp = require('sharp');
+import sharp from 'sharp';
 import { LocalMediaStorage } from './storage/local-media-storage';
 import { DomainException } from '../../common/exceptions/domain.exception';
 import { DomainErrorCode } from '../../common/exceptions/domain-error.enum';

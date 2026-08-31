@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, lazy, Suspense } from 'react'
 import {
   ArrowRight,
   BookOpenCheck,
@@ -13,8 +13,11 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { ScrollReveal, framerEase } from '@/shared/components/ScrollReveal'
-import { Criteria3DScene } from '@/three/marketing/Criteria3DScene'
 import { journeyCriteria } from '@/features/journey/data/journey'
+
+const Criteria3DScene = lazy(() =>
+  import('@/three/marketing/Criteria3DScene').then((m) => ({ default: m.Criteria3DScene })),
+)
 
 const criterionIcons = [HeartHandshake, BookOpenCheck, Dumbbell, HandHeart, Languages]
 
@@ -144,7 +147,16 @@ export function CriteriaSection() {
                 <span className="criteria-stage-node-hint">Tương tác 3D đa chiều</span>
               </div>
               <div className="criteria-stage-canvas">
-                <Criteria3DScene activeIndex={activeCriterionIndex} />
+                <Suspense
+                  fallback={
+                    <div
+                      className="w-full h-full flex items-center justify-center rounded-2xl bg-[rgba(14,46,94,0.4)] border border-[rgba(159,215,245,0.2)]"
+                      aria-hidden="true"
+                    />
+                  }
+                >
+                  <Criteria3DScene activeIndex={activeCriterionIndex} />
+                </Suspense>
               </div>
             </div>
 
