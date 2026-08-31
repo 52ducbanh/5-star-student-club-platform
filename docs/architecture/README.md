@@ -57,8 +57,8 @@ BrowserRouter
 | State | Owner | Persistence |
 | --- | --- | --- |
 | Journey checklist | Journey repository/hook | `localStorage` |
-| Selected journey criterion | Router | `?criterion=` |
-| Open activity detail | Router | `?item=` |
+| Selected journey criterion | Router | `?criterion=<id>` |
+| Open activity detail | Router & API | `?item=<slug>` (resolved by slug via backend) |
 | STARPRINT in-progress UI | Zustand store | Partial `sessionStorage` state |
 | Authoritative STARPRINT progress | Server | PostgreSQL |
 | Sky snapshot/live additions | Sky page | React state from REST + Socket.IO |
@@ -69,6 +69,7 @@ On a STARPRINT reload, the persisted session ID is reconciled with `GET /api/ses
 
 `packages/contracts/src` is the public shape boundary:
 
+- `activities/`: `NewsItem`, `EventItem`, `DerivedEventStatus`, `RegistrationRequest`, `RegistrationResponse`, `ContactRequest`, `ContactResponse`.
 - `games/`: game IDs and submission response.
 - `sessions/`: create/restore shapes and statuses.
 - `starprints/`: generate, publish, result, palette, type, and effect.
@@ -81,15 +82,13 @@ When a network shape changes:
 3. Adapt the client API types/consumer.
 4. Verify REST and Socket.IO payloads.
 
-Contracts intentionally describe shapes, not the approved meaning of the provisional scoring model.
-
 ## Server boundary
 
 `server/src` is divided into:
 
 - `common/`: domain error types/filter and CORS helper.
 - `config/`: environment mapping.
-- `database/`: application TypeORM module, CLI data source, and migrations.
+- `database/`: application TypeORM module, CLI data source, migrations, and seeds.
 - `modules/`: feature modules.
 
 ```text
@@ -103,40 +102,23 @@ SessionsModule
    │                ▼
    ├────────► UploadsModule       SkyGateway
    │                │                │
-   ▼                ▼                ▼
-player_sessions   local WebP      star.created
-                                      │
-                               browser Sky clients
+   │                ▼                ▼
+   ├────────► NewsModule ────────► news
+   │
+   ├────────► EventsModule ──────► events + event_registrations
+   │
+   └────────► ContactModule ─────► contact_submissions
 ```
-
-### Lifecycle
-
-```text
-POST session
-  → optional photo upload
-  → solve
-  → sense
-  → sprint
-  → support
-  → sync
-  → generate STARPRINT
-  → optional publish with name/photo consent
-```
-
-Session status:
-
-```text
-IN_PROGRESS
-  └─ fifth accepted game ─► READY_TO_GENERATE
-       └─ generation transaction ─► GENERATED
-            └─ publication transaction ─► PUBLISHED
-```
-
-The server enforces the current demo order and raw-result shapes. Generation and publication update the STARPRINT and session status in transactions. `star.created` is emitted only after publication commits.
 
 ### HTTP and Socket.IO
 
 ```text
+GET  /api/news
+GET  /api/news/:slug
+GET  /api/events
+GET  /api/events/:slug
+POST /api/events/:eventId/registrations
+POST /api/contact
 POST /api/sessions
 GET  /api/sessions/:id
 POST /api/sessions/:sessionId/photo
@@ -152,9 +134,16 @@ Swagger exposes the controller surface at `/api/docs`.
 
 ### Database
 
-The initial PostgreSQL migration creates `player_sessions`, `game_results`, and `starprints`. Game results and STARPRINTs cascade on session deletion. Uniqueness prevents duplicate games and duplicate STARPRINT generation. `synchronize` and `migrationsRun` are disabled.
+PostgreSQL migrations create:
+- `player_sessions`
+- `game_results`
+- `starprints`
+- `news`
+- `events`
+- `event_registrations`
+- `contact_submissions`
 
-The CLI data source reads compiled entities and migrations under `server/dist`. A server build is therefore required before `migration:run` or `migration:generate`.
+The CLI data source reads compiled entities and migrations under `server/dist`. A server build (`npm run build:server`) is required before `migration:run`, `migration:generate`, or `seed:dev`.
 
 ## Media path
 
@@ -176,27 +165,12 @@ The local adapter is development-only. `MEDIA_STORAGE` is present in configurati
 - Socket.IO runs on the server origin, not the `/api` path.
 - Production client and server builds must agree on `VITE_API_URL` and `CLIENT_ORIGIN`.
 
-## Deployment topology
-
-```text
-Static host
-  client/dist
-      │ HTTPS REST + WebSocket
-      ▼
-Node/WebSocket host
-  server/dist/main.js
-      ├── PostgreSQL
-      └── durable media provider (not implemented)
-```
-
-`client/vercel.json` provides only SPA history fallback. It is not a complete monorepo or backend deployment definition.
-
 ## Architectural invariants
 
 1. Source and manifests override stale prompts or documentation.
 2. Public client/server shapes belong in `@5ss/contracts`.
 3. Marketing and game shells remain isolated.
-4. Server/database state is authoritative for STARPRINT progress.
+4. Server/database state is authoritative for STARPRINT progress and event registrations.
 5. Publication privacy is applied in both REST Sky mapping and the live event payload.
 6. Database state transitions complete before live events are emitted.
 7. Local journey data stays local unless an approved product change says otherwise.

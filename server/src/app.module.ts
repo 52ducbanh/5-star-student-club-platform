@@ -7,6 +7,9 @@ import { GamesModule } from './modules/games/games.module';
 import { StarprintsModule } from './modules/starprints/starprints.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { SkyModule } from './modules/sky/sky.module';
+import { NewsModule } from './modules/news/news.module';
+import { EventsModule } from './modules/events/events.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { SkyModule } from './modules/sky/sky.module';
     StarprintsModule,
     UploadsModule,
     SkyModule,
+    NewsModule,
+    EventsModule,
+    ContactModule,
   ],
 })
 export class AppModule {}

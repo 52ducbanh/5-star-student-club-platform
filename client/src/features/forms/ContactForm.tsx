@@ -1,5 +1,5 @@
-﻿import { useState, type FormEvent } from 'react'
-import { CheckCircle2, Send, Loader2 } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { AlertCircle, CheckCircle2, Send, Loader2 } from 'lucide-react'
 import { isValidEmail, required } from './validation'
 import { contactService } from './contact.service'
 
@@ -9,17 +9,20 @@ const initialValues: ContactValues = { name: '', email: '', message: '' }
 export function ContactForm() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState<Partial<Record<keyof ContactValues, string>>>({})
+  const [serverError, setServerError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
   const update = (field: keyof ContactValues, value: string) => {
     setValues((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
+    setServerError(null)
     setSuccess(false)
   }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    setServerError(null)
     const next: Partial<Record<keyof ContactValues, string>> = {}
     if (!required(values.name)) next.name = 'Vui lòng nhập họ tên.'
     if (!required(values.email)) next.email = 'Vui lòng nhập email.'
@@ -34,6 +37,8 @@ export function ContactForm() {
       await contactService.submit(values)
       setValues(initialValues)
       setSuccess(true)
+    } catch (err: any) {
+      setServerError(err?.message || 'Có lỗi xảy ra khi gửi lời nhắn. Vui lòng thử lại sau.')
     } finally {
       setLoading(false)
     }
@@ -44,7 +49,13 @@ export function ContactForm() {
       {success && (
         <div className="form-success-banner" role="status">
           <CheckCircle2 size={18} aria-hidden="true" />
-          <span><strong>Đã gửi thành công trong bản mô phỏng.</strong> Nội dung không được chuyển tới máy chủ.</span>
+          <span><strong>Nội dung của bạn đã được gửi thành công.</strong> Ban tổ chức sẽ phản hồi sớm nhất có thể.</span>
+        </div>
+      )}
+      {serverError && (
+        <div className="form-error-banner" role="alert" style={{ color: '#ff6b6b', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <AlertCircle size={18} aria-hidden="true" />
+          <span>{serverError}</span>
         </div>
       )}
       <label className="form-field">
@@ -64,7 +75,7 @@ export function ContactForm() {
       </label>
       <button type="submit" disabled={loading} className="btn btn--primary form-submit">
         {loading ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}
-        {loading ? 'Đang gửi...' : 'Gửi lời nhắn demo'}
+        {loading ? 'Đang gửi...' : 'Gửi lời nhắn'}
       </button>
     </form>
   )

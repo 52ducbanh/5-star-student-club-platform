@@ -1,8 +1,8 @@
-﻿import { useState, type FormEvent } from 'react'
-import { CheckCircle2, LockKeyhole, Send, Loader2 } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { AlertCircle, CheckCircle2, LockKeyhole, Send, Loader2 } from 'lucide-react'
 import { siteConfig } from '../../config/site'
 import { isValidEmail, isValidPhone, required } from '../forms/validation'
-import { registrationService } from '../forms/registration.service'
+import { submitRegistration } from '../forms/api/registrationApi'
 
 type RegistrationValues = {
   fullName: string
@@ -22,15 +22,25 @@ const initialValues: RegistrationValues = {
   message: '',
 }
 
-export function RegistrationForm({ eventTitle, onDone }: { eventTitle: string; onDone: () => void }) {
+export function RegistrationForm({
+  eventId,
+  eventTitle,
+  onDone,
+}: {
+  eventId: string
+  eventTitle: string
+  onDone: () => void
+}) {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationValues, string>>>({})
+  const [serverError, setServerError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
   const update = (field: keyof RegistrationValues, value: string) => {
     setValues((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
+    setServerError(null)
   }
 
   const validate = () => {
@@ -49,18 +59,22 @@ export function RegistrationForm({ eventTitle, onDone }: { eventTitle: string; o
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    setServerError(null)
     if (!validate()) return
     setLoading(true)
     try {
-      await registrationService.submit({
+      await submitRegistration(eventId, {
         name: values.fullName,
         studentId: values.studentId,
         email: values.email,
         phone: values.phone,
-        eventId: eventTitle,
+        unit: values.unit,
+        message: values.message.trim() || undefined,
       })
       setSuccess(true)
       setValues(initialValues)
+    } catch (err: any) {
+      setServerError(err?.message || 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.')
     } finally {
       setLoading(false)
     }
@@ -70,8 +84,8 @@ export function RegistrationForm({ eventTitle, onDone }: { eventTitle: string; o
     return (
       <div className="form-success" role="status">
         <span><CheckCircle2 size={30} aria-hidden="true" /></span>
-        <h3>Đăng ký mô phỏng thành công!</h3>
-        <p>Bạn đã hoàn tất luồng đăng ký cho “{eventTitle}”. Không có dữ liệu nào được gửi hoặc lưu lại.</p>
+        <h3>Đăng ký thành công!</h3>
+        <p>Đăng ký của bạn cho “{eventTitle}” đã được ghi nhận thành công.</p>
         <button type="button" className="btn btn--primary" onClick={onDone}>Hoàn tất</button>
       </div>
     )
@@ -79,7 +93,13 @@ export function RegistrationForm({ eventTitle, onDone }: { eventTitle: string; o
 
   return (
     <form className="app-form registration-form" onSubmit={submit} noValidate>
-      <div className="form-note"><LockKeyhole size={16} aria-hidden="true" /> Form demo · không gửi dữ liệu tới máy chủ</div>
+      <div className="form-note"><LockKeyhole size={16} aria-hidden="true" /> Thông tin của bạn được lưu bảo mật.</div>
+      {serverError && (
+        <div className="form-error-banner" role="alert" style={{ color: '#ff6b6b', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <AlertCircle size={18} aria-hidden="true" />
+          <span>{serverError}</span>
+        </div>
+      )}
       <div className="form-grid">
         <FormField label="Họ và tên" name="fullName" value={values.fullName} error={errors.fullName} required onChange={(value) => update('fullName', value)} autoComplete="name" />
         <FormField label="Mã sinh viên" name="studentId" value={values.studentId} error={errors.studentId} required onChange={(value) => update('studentId', value)} />
@@ -93,7 +113,7 @@ export function RegistrationForm({ eventTitle, onDone }: { eventTitle: string; o
       </div>
       <button className="btn btn--primary form-submit" type="submit" disabled={loading}>
         {loading ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}
-        {loading ? 'Đang gửi...' : 'Hoàn tất đăng ký demo'}
+        {loading ? 'Đang gửi...' : 'Hoàn tất đăng ký'}
       </button>
     </form>
   )

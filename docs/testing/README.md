@@ -32,6 +32,7 @@ The Jest suite imports the real `AppModule`. Its end-to-end tests therefore conn
 npm run build:contracts
 npm run build:server
 npm --workspace @5ss/server run migration:run
+npm --workspace @5ss/server run seed:dev
 ```
 
 Do not point this test suite at production. The current lifecycle test deletes the session it creates and relies on cascade cleanup, but it does not provision or isolate a database automatically.
@@ -55,6 +56,7 @@ Useful targeted commands:
 ```powershell
 npm --workspace @5ss/server test -- --runInBand test/scoring.spec.ts
 npm --workspace @5ss/server test -- --runInBand test/app.e2e-spec.ts
+npm --workspace @5ss/server test -- --runInBand test/activities.e2e-spec.ts
 ```
 
 ## Current automated coverage
@@ -71,7 +73,7 @@ npm --workspace @5ss/server test -- --runInBand test/app.e2e-spec.ts
 
 These tests lock the current demo implementation. They do not establish business approval or psychometric validity.
 
-### Full-lifecycle tests
+### STARPRINT full-lifecycle tests
 
 `server/test/app.e2e-spec.ts` currently contains 11 ordered cases:
 
@@ -87,9 +89,16 @@ These tests lock the current demo implementation. They do not establish business
 10. Publish with consent flags.
 11. List the public star with consent filtering.
 
-The suite installs the same global validation pipe and domain exception filter as the running application. It does not currently test file upload processing, actual Socket.IO delivery, CORS, Swagger, or concurrent submissions.
+### Dynamic content & activities tests
 
-Total current Jest cases: 24.
+`server/test/activities.e2e-spec.ts` currently contains 17 cases:
+
+- News: list published news ordered by `publishedAt DESC`, slug lookup, draft exclusion, 404 for unknown/draft items.
+- Events: list published events with derived `status` and `registrationAvailable`, slug lookup, 404 for unknown items.
+- Event Registration: successful creation, trimmed studentId and normalized lowercase email, 409 `DUPLICATE_REGISTRATION` for duplicate studentId on same event, cross-event registration allowed, 422 for disabled/passed deadline, 422 `EVENT_FULL` for capacity overflow, 404 for unknown event, 400 for invalid payload.
+- Contact: valid submission persisted in `contact_submissions`, 400 for invalid payload.
+
+**Total current automated Jest cases: 41.**
 
 ## Manual client smoke checklist
 
@@ -108,9 +117,9 @@ Because the client has no automated UI suite, perform proportional manual checks
 - Open `/hanh-trinh-5-tot?criterion=hoc-tap` and confirm the matching criterion is selected.
 - Toggle checklist items, reload, and confirm browser-local persistence.
 - Reset progress and confirm the local state clears.
-- Open `/hoat-dong?item=news-1` and an event ID; close the modal and confirm `item` is removed.
+- Open `/hoat-dong?item=<slug>` and an event slug; close the modal and confirm `item` is removed.
 - Confirm invalid `item` values do not open a modal.
-- Remember that contact and registration submissions are simulated.
+- Submit contact form and event registration form; verify persistence in database.
 
 ### STARPRINT
 
@@ -158,8 +167,5 @@ After `npm run build`:
 - Upload processing and invalid-file integration tests.
 - Socket.IO event integration/reconnection tests.
 - CORS and multi-origin tests.
-- Concurrent duplicate submission/generation/publication tests.
 - Migration up/down tests and isolated test database provisioning.
 - Authentication/authorization tests are not applicable yet because those features do not exist.
-
-When adding tests around provisional STARPRINT rules, label them as current demo behavior. Do not convert those expectations into claims of approved game design.
