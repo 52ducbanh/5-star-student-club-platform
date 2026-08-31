@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Sparkles, ArrowRight, Brain, Compass, Zap, Share2, Globe } from 'lucide-react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
@@ -21,7 +21,7 @@ const GAMES = [
     title: 'Định Hướng Đạo Đức',
     criterion: 'Đạo đức tốt',
     icon: Compass,
-    color: '#ffd467',
+    color: '#ff5c5c',
     desc: 'Phản xạ ứng xử trước các tình huống đồng đội và đạo đức thực tế.',
   },
   {
@@ -31,7 +31,7 @@ const GAMES = [
     title: 'Bứt Tốc Thể Lực',
     criterion: 'Thể lực tốt',
     icon: Zap,
-    color: '#5fe3a1',
+    color: '#ffd467',
     desc: 'Game 2D Runner 20s: Nhảy vượt chướng ngại vật & thu thập sao năng lượng.',
   },
   {
@@ -41,7 +41,7 @@ const GAMES = [
     title: 'Mạng Lưới Tình Nguyện',
     criterion: 'Tình nguyện tốt',
     icon: Share2,
-    color: '#ff8b72',
+    color: '#5fe3a1',
     desc: 'Xoay các ô nối mạch lưới 4x4 để truyền năng lượng từ nguồn tới đích.',
   },
   {

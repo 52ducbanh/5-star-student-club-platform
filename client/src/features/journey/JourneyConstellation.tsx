@@ -58,21 +58,21 @@ export function JourneyConstellation({
         aria-hidden="true"
       >
         <defs>
-          <linearGradient id="spoke-gradient-gold" x1={core.x} y1={core.y} x2={daoDuc.x} y2={daoDuc.y} gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#ffd467" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#ffd467" stopOpacity="0.2" />
+          <linearGradient id="spoke-gradient-red" x1={core.x} y1={core.y} x2={daoDuc.x} y2={daoDuc.y} gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#ff5c5c" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#ff5c5c" stopOpacity="0.2" />
           </linearGradient>
           <linearGradient id="spoke-gradient-blue" x1={core.x} y1={core.y} x2={hocTap.x} y2={hocTap.y} gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#6cd5f7" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#6cd5f7" stopOpacity="0.2" />
           </linearGradient>
-          <linearGradient id="spoke-gradient-green" x1={core.x} y1={core.y} x2={theLuc.x} y2={theLuc.y} gradientUnits="userSpaceOnUse">
+          <linearGradient id="spoke-gradient-gold" x1={core.x} y1={core.y} x2={theLuc.x} y2={theLuc.y} gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#ffd467" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#ffd467" stopOpacity="0.2" />
+          </linearGradient>
+          <linearGradient id="spoke-gradient-green" x1={core.x} y1={core.y} x2={tinhNguyen.x} y2={tinhNguyen.y} gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#5fe3a1" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#5fe3a1" stopOpacity="0.2" />
-          </linearGradient>
-          <linearGradient id="spoke-gradient-orange" x1={core.x} y1={core.y} x2={tinhNguyen.x} y2={tinhNguyen.y} gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#ff8b72" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#ff8b72" stopOpacity="0.2" />
           </linearGradient>
           <linearGradient id="spoke-gradient-violet" x1={core.x} y1={core.y} x2={hoiNhap.x} y2={hoiNhap.y} gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#b794f6" stopOpacity="0.8" />
@@ -97,7 +97,7 @@ export function JourneyConstellation({
           x2={daoDuc.x}
           y2={daoDuc.y}
           className={`journey-spoke ${selectedId === 'dao-duc' ? 'is-focused' : ''} ${criterionProgress['dao-duc'] === 100 ? 'is-complete' : ''}`}
-          stroke="url(#spoke-gradient-gold)"
+          stroke="url(#spoke-gradient-red)"
         />
 
         <line
@@ -115,7 +115,7 @@ export function JourneyConstellation({
           x2={theLuc.x}
           y2={theLuc.y}
           className={`journey-spoke ${selectedId === 'the-luc' ? 'is-focused' : ''} ${criterionProgress['the-luc'] === 100 ? 'is-complete' : ''}`}
-          stroke="url(#spoke-gradient-green)"
+          stroke="url(#spoke-gradient-gold)"
         />
 
         <line
@@ -124,7 +124,7 @@ export function JourneyConstellation({
           x2={tinhNguyen.x}
           y2={tinhNguyen.y}
           className={`journey-spoke ${selectedId === 'tinh-nguyen' ? 'is-focused' : ''} ${criterionProgress['tinh-nguyen'] === 100 ? 'is-complete' : ''}`}
-          stroke="url(#spoke-gradient-orange)"
+          stroke="url(#spoke-gradient-green)"
         />
 
         <line

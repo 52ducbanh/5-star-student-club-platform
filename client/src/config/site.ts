@@ -1,9 +1,9 @@
-﻿export const siteConfig = {
+export const siteConfig = {
   name: 'CLB Sinh viên 5 Tốt - 5SS UET',
   shortName: '5SS UET',
   slogan: 'Hợp tác – Dẫn dắt – Tài năng – Tỏa sáng',
   description:
-    'Không gian giới thiệu CLB Sinh viên 5 Tốt - 5SS UET và hành trình rèn luyện năm tiêu chí Sinh viên 5 Tốt toàn diện.',
+    'Không gian số chính thức của CLB Sinh viên 5 Tốt - Trường Đại học Công nghệ (UET - ĐHQGHN).',
   logoSrc: '/assets/sv5t-mark.png?v=2' as string | null,
   emailDomain: null as string | null,
   demoMode: true,

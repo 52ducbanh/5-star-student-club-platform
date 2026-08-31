@@ -47,7 +47,7 @@ export const journeyCriteria: JourneyCriterion[] = [
       { id: 'dao-duc-2', label: 'Đã chọn một thói quen muốn cải thiện' },
       { id: 'dao-duc-3', label: 'Đã lưu một minh chứng rèn luyện phù hợp' },
     ],
-    color: '#ffd467',
+    color: '#ff5c5c',
   },
   {
     id: 'hoc-tap',
@@ -117,7 +117,7 @@ export const journeyCriteria: JourneyCriterion[] = [
       { id: 'the-luc-2', label: 'Đã lập lịch rèn luyện cá nhân' },
       { id: 'the-luc-3', label: 'Đã hoàn thành một mốc thử thách thể lực' },
     ],
-    color: '#5fe3a1',
+    color: '#ffd467',
   },
   {
     id: 'tinh-nguyen',
@@ -152,7 +152,7 @@ export const journeyCriteria: JourneyCriterion[] = [
       { id: 'tinh-nguyen-2', label: 'Đã tham gia hỗ trợ một chương trình tình nguyện' },
       { id: 'tinh-nguyen-3', label: 'Đã ghi nhận đóng góp và bài học sau hoạt động' },
     ],
-    color: '#ff8b72',
+    color: '#5fe3a1',
   },
   {
     id: 'hoi-nhap',

@@ -1,41 +1,57 @@
 import { Sparkles } from 'lucide-react'
 import logoStrip from '../assets/SV5T.svg'
 
-const stripCopiesPerCycle = [0, 1, 2]
+const marqueeCopies = [0, 1, 2, 3]
 
 export function AffiliationMarquee() {
   return (
-    <div
-      className="affiliation-marquee"
-      aria-label="Các biểu trưng đồng hành cùng 5SS UET"
-      title="Biểu trưng Hội Sinh viên & Các đơn vị đồng hành UET"
+    <section
+      className="affiliation-showcase"
+      aria-label="Dấu ấn sinh viên UET - Các biểu trưng đồng hành cùng 5SS UET"
     >
-      <span className="affiliation-marquee__label">
-        <Sparkles size={14} aria-hidden="true" />
-        Dấu ấn sinh viên UET
-      </span>
+      <div className="affiliation-showcase__inner container--wide">
+        {/* Subtle section header / kicker */}
+        <div className="affiliation-showcase__header">
+          <span className="affiliation-showcase__kicker">
+            <Sparkles size={13} aria-hidden="true" />
+            Dấu ấn sinh viên UET
+          </span>
+        </div>
 
-      <div className="affiliation-marquee__viewport" aria-hidden="true">
-        <div className="affiliation-marquee__track">
-          {[0, 1].map((cycle) => (
-            <div
-              className="affiliation-marquee__group"
-              aria-hidden="true"
-              key={cycle}
-            >
-              {stripCopiesPerCycle.map((copy) => (
+        {/* Desktop Static Showcase (>= 1024px) */}
+        <div className="affiliation-showcase__desktop">
+          <div className="affiliation-showcase__logo-container">
+            <img
+              src={logoStrip}
+              alt="Các biểu trưng đồng hành cùng Sinh viên 5 Tốt UET"
+              className="affiliation-showcase__logo-img"
+              decoding="async"
+              draggable={false}
+            />
+          </div>
+        </div>
+
+        {/* Tablet & Mobile Marquee Viewport (< 1024px) */}
+        <div className="affiliation-showcase__mobile-viewport" aria-hidden="true">
+          <div className="affiliation-showcase__track">
+            {marqueeCopies.map((copyIndex) => (
+              <div
+                className="affiliation-showcase__group"
+                aria-hidden="true"
+                key={copyIndex}
+              >
                 <img
                   src={logoStrip}
                   alt=""
+                  className="affiliation-showcase__mobile-img"
                   decoding="async"
                   draggable={false}
-                  key={`${cycle}-${copy}`}
                 />
-              ))}
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   )
 }

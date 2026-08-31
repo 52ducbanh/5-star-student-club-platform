@@ -12,11 +12,14 @@ export function AboutSection() {
       <div className="home-section__inner container">
         {/* Section Header with Inspiring Editorial Statement */}
         <ScrollReveal className="home-section__header" distance={65} duration={1.15}>
-          <p className="section-label">Về 5SS UET</p>
+          <div className="about-header-badge-wrap">
+            <span className="section-label section-label--about">Về 5SS UET</span>
+          </div>
           <h2 id="about-heading">
             Một cộng đồng cùng nhau{' '}
             <span className="text-gradient">tỏa sáng</span>
           </h2>
+          <p className="about-tagline">{aboutContent.tagline}</p>
           <p className="home-section__desc">{aboutContent.intro}</p>
         </ScrollReveal>
 
@@ -46,7 +49,7 @@ export function AboutSection() {
             <p className="section-label">Bốn giá trị cốt lõi</p>
             <Sparkles size={14} className="text-[#ffd467]" aria-hidden="true" />
           </div>
-          <h3>Định hình bản sắc của người 5SS UET</h3>
+          <h3>Định hình bản sắc con người 5SS UET</h3>
         </ScrollReveal>
 
         {/* 4 Core Values Grid */}

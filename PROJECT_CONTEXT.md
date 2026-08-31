@@ -1,6 +1,6 @@
 # PROJECT CONTEXT — 5SS UET Website & STARPRINT Platform
 
-> Last source audit: 2026-08-31, after the dynamic content (News, Events, Registration, Contact) migration to NestJS + PostgreSQL.
+> Last source audit: 2026-09-01, handoff from Antigravity to Codex.
 >
 > This file is the engineering handoff for the live repository. Source code and package manifests remain the source of truth when they disagree with documentation.
 
@@ -8,10 +8,12 @@
 
 5SS UET is the digital brand space for the Sinh viên 5 Tốt Club at VNU University of Engineering and Technology. The repository currently contains:
 
-1. A public marketing experience for the club and five Sinh viên 5 Tốt criteria.
-2. A browser-local checklist and constellation journey.
-3. Server-backed news, events, event registration, and contact submission experiences.
-4. STARPRINT: a server-backed five-game flow that generates a deterministic illustrated star result.
+1. A public marketing experience for the club with 3D solar system, centered Journey CTA beneath the 3D star, desktop static student affiliation logo showcase (with responsive mobile marquee), and synchronized 5 criteria color system.
+2. A browser-local checklist and constellation journey with criteria deep-linking.
+3. Server-backed news, events, event registration, and contact submission experiences (NestJS + PostgreSQL).
+4. STARPRINT Platform:
+   - **Current Implementation:** server-backed five-game flow (`solve`, `sense`, `sprint`, `support`, `sync`) with provisional/legacy 5-dimension scoring (`focus`, `explore`, `energy`, `social`, `adapt`) and 5 legacy star archetypes (`NAVIGATOR`, `EXPLORER`, `CATALYST`, `CONNECTOR`, `VISIONARY`).
+   - **Upcoming Target Specification:** detailed in `Main question for building minigame in 5SS web`, specifying 7 Hidden Profile Traits (Sharpness, Insight, Precision, Initiative, Connection, Adaptation, Persistence), 5 Target Star Types (STRATEGIST, SPARK, SYNERGIST, SEEKER, SUSTAINER), finite 3-lane SPRINT, Cut-the-Rope SUPPORT, and 4×5 Memory/Semantic SYNC. *This new specification is the next major task for Codex and is NOT yet implemented in source code.*
 5. 5SS Sky: a privacy-filtered public collection with REST loading, Socket.IO updates, 3D rendering, and a grid fallback.
 
 ### Status language
@@ -326,23 +328,26 @@ npm test
 
 ## 10. Confirmations and technical debt
 
-### TODO GAME DESIGN CONFIRMATION
+### TODO GAME DESIGN CONFIRMATION / NEXT CODEX TASK
 
-Do not finalize without organizer/BA approval:
+The upcoming mini-game specification is documented in `Main question for building minigame in 5SS web`. The next coding agent (Codex) will migrate the mini-games from legacy provisional logic to this approved specification:
 
-1. SOLVE question bank, answer keys, timer, difficulty, and scoring.
-2. SENSE scenarios, language, choices, and five-dimensional vectors.
-3. SPRINT duration, physics, spawn rates, collision rules, and scoring.
-4. SUPPORT layouts, path rules, time/rotation scoring, and fallback behavior.
-5. SYNC cards, pair count, cooldown, mismatch behavior, and scoring.
+1. **Hidden Profile Traits:** Migrate from 5 provisional dimensions (`focus`, `explore`, `energy`, `social`, `adapt`) to 7 official traits: `Sharpness`, `Insight`, `Precision`, `Initiative`, `Connection`, `Adaptation`, `Persistence`.
+2. **Star Types:** Migrate to the 5 official types: `STRATEGIST`, `SPARK`, `SYNERGIST`, `SEEKER`, `SUSTAINER`.
+3. **SOLVE:** Update logic/speed question bank and trait contribution vectors.
+4. **SENSE:** Update 3 scenario decision matrices for 7-trait vector contributions.
+5. **SPRINT:** Rebuild as a finite 3-lane runner (Left / Right / Jump), 15–18s track length, 20s hard cap, max 2 attempts.
+6. **SUPPORT:** Rebuild as Cut-the-Rope physics/puzzle game with 3 predefined puzzles (10s per puzzle), tap/click rope, and auto-reset after invalid state.
+7. **SYNC:** Rebuild as Memory + Semantic Matching game with 20 cards / 10 pairs (4×5 grid, 30s timer).
+8. **Server Scoring & Contracts:** Reconcile `@5ss/contracts`, NestJS `scoring.service.ts`, TypeORM entities, and unit tests to the 7-trait normalization and deterministic tie-breaking rules.
 
 ### TODO BUSINESS CONFIRMATION
 
 1. The five archetype names, descriptions, dimensions, thresholds, and tie behavior.
 2. Archetype-to-effect mapping (`flow`, `shimmer`, `spark`, `orbit`, `pulse`).
-3. Official club copy, milestones, leader information/media, social links, email, phone, recruitment link, and map.
-4. Official journey criteria, evidence rules, recognized activities, and disclaimers.
-5. Real event data, registration policy, privacy notice, retention, and consent language.
+3. Official club copy, milestones, leader information/media, recruitment link, and evidence rules.
+4. Real event data, registration policy, privacy notice, retention, and consent language.
+5. Confirmed in Round 1: Official contact info (`facebook.com/5ss.uet`, `@5ssuet`, `085 901 8686`, `5ss.uet.vnu@gmail.com`, 144 Xuân Thủy), official about statement and tagline (`BEYOND A STAR — WE CREATE OUR OWN LIGHT.`), 4 Core Value colors, and 5 SV5T Criteria colors (`dao-duc`: #ff5c5c, `hoc-tap`: #6cd5f7, `the-luc`: #ffd467, `tinh-nguyen`: #5fe3a1, `hoi-nhap`: #b794f6).
 
 ### Engineering debt/placeholders
 

@@ -7,11 +7,11 @@ interface LoadingStarPentagonProps {
 }
 
 const CRITERIA_COLORS = [
-  '#ffd467', // Đạo đức tốt - Warm Sun Gold
-  '#6cd5f7', // Học tập tốt - Sky Cyan
-  '#5fe3a1', // Thể lực tốt - Mint Spring Green
-  '#ff8b72', // Tình nguyện tốt - Coral Orange
-  '#b794f6', // Hội nhập tốt - Dreamy Lavender Violet
+  '#ff5c5c', // 1. Đạo đức tốt - Vivid Star Red
+  '#6cd5f7', // 2. Học tập tốt - Sky Cyan
+  '#ffd467', // 3. Thể lực tốt - Warm Sun Gold
+  '#5fe3a1', // 4. Tình nguyện tốt - Mint Spring Green
+  '#b794f6', // 5. Hội nhập tốt - Dreamy Lavender Violet
 ]
 
 const CRITERIA_NAMES = [

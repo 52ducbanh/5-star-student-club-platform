@@ -37,6 +37,8 @@
   --danger:           #ff6584;
 
   /* ── Semantic Criteria Colors (5 Dimensions) ─────────────── */
+  --crit-red:         #ff5c5c;
+  --crit-red-glow:    rgba(255, 92, 92, 0.35);
   --crit-gold:        #ffd467;
   --crit-gold-glow:   rgba(255, 212, 103, 0.35);
   --crit-blue:        #6cd5f7;

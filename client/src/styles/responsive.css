@@ -17,8 +17,8 @@ body {
   box-sizing: border-box;
 }
 
-/* ── Tablet (max 1024px) ───────────────────────────────────── */
-@media (max-width: 1024px) {
+/* ── Tablet (under 1024px) ─────────────────────────────────── */
+@media (max-width: 1023.98px) {
 
   /* Navigation */
   .desktop-nav { display: none !important; }
@@ -119,30 +119,39 @@ body {
     margin-inline: auto;
   }
 
-  /* Affiliation Strip Tablet */
-  .affiliation-marquee {
-    width: min(540px, 92vw);
-    padding: 7px 16px;
-    gap: 12px;
+  /* Journey CTA Tablet */
+  .hero-journey-cta-wrap {
+    bottom: 10px;
   }
-  .affiliation-marquee__label {
-    font-size: 11px;
-    padding-right: 10px;
-  }
-  .affiliation-marquee__group {
-    height: 28px;
-  }
-  .affiliation-marquee__group img {
-    height: 26px;
-  }
-  .affiliation-marquee__viewport {
-    --affiliation-marquee-gap: 20px;
-    --affiliation-marquee-half-gap: 10px;
+  .hero-journey-cta {
+    min-width: 195px;
+    height: 48px;
+    padding: 0 22px;
+    font-size: 14px;
   }
 
-  /* About section */
-  .about-purpose { grid-template-columns: 1fr; }
-  .value-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Affiliation Showcase Tablet */
+  .affiliation-showcase,
+  .affiliation-marquee-band {
+    padding: 24px 0 28px;
+  }
+  .affiliation-showcase__desktop {
+    display: none !important;
+  }
+  .affiliation-showcase__mobile-viewport,
+  .affiliation-marquee-band__viewport {
+    display: block !important;
+    --showcase-gap: 36px;
+    --marquee-gap: 36px;
+  }
+  .affiliation-showcase__track,
+  .affiliation-marquee-band__track {
+    animation-duration: 30s;
+  }
+  .affiliation-showcase__mobile-img,
+  .affiliation-marquee-band__group img {
+    height: 50px;
+  }
   .leader-spotlight { grid-template-columns: 1fr; gap: 36px; padding: 32px; }
   .leader-frame__img { min-height: 280px; }
 
@@ -531,42 +540,56 @@ body {
     border-radius: 999px;
   }
 
-  /* Affiliation marquee */
-  .home-hero__affiliation-wrap {
-    margin-top: 14px;
-    width: 100%;
+  /* Affiliation Showcase Mobile */
+  .affiliation-showcase,
+  .affiliation-marquee-band {
+    padding: 18px 0 22px;
   }
-
-  .affiliation-marquee {
-    width: 100%;
-    max-width: 100%;
-    padding: 6px 12px;
-    gap: 10px;
-    border-radius: 999px;
+  .affiliation-showcase__header {
+    margin-bottom: 14px;
   }
-
-  .affiliation-marquee__label {
-    font-size: 10px;
-    padding-right: 8px;
-    letter-spacing: 0.06em;
+  .affiliation-showcase__kicker,
+  .affiliation-marquee-band__label {
+    font-size: 11px;
+    padding: 4px 14px;
+    letter-spacing: 0.08em;
   }
-
-  .affiliation-marquee__label svg {
+  .affiliation-showcase__kicker svg,
+  .affiliation-marquee-band__label svg {
     width: 12px;
     height: 12px;
   }
-
-  .affiliation-marquee__group {
-    height: 24px;
+  .affiliation-showcase__desktop {
+    display: none !important;
+  }
+  .affiliation-showcase__mobile-viewport,
+  .affiliation-marquee-band__viewport {
+    display: block !important;
+    --showcase-gap: 28px;
+    --marquee-gap: 28px;
+  }
+  .affiliation-showcase__track,
+  .affiliation-marquee-band__track {
+    animation-duration: 36s;
+  }
+  .affiliation-showcase__mobile-img,
+  .affiliation-marquee-band__group img {
+    height: 42px;
   }
 
-  .affiliation-marquee__group img {
-    height: 22px;
+  .hero-journey-cta-wrap {
+    bottom: 6px;
   }
-
-  .affiliation-marquee__viewport {
-    --affiliation-marquee-gap: 16px;
-    --affiliation-marquee-half-gap: 8px;
+  .hero-journey-cta {
+    min-width: 175px;
+    height: 44px;
+    padding: 0 18px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  .hero-journey-cta__arrow {
+    width: 15px;
+    height: 15px;
   }
 
   /* Journey Page Mobile (<768px) */

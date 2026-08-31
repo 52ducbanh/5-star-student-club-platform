@@ -1,13 +1,11 @@
-﻿import { lazy, Suspense } from 'react'
-import { ArrowRight, BookOpenCheck, Dumbbell, HandHeart, HeartHandshake, Languages, ShieldCheck, Sparkles } from 'lucide-react'
+import { lazy, Suspense } from 'react'
+import { ArrowRight, BookOpenCheck, Dumbbell, HandHeart, HeartHandshake, Languages, ShieldCheck } from 'lucide-react'
 import { motion } from 'motion/react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { AffiliationMarquee } from '@/marketing/components/AffiliationMarquee'
+import { Link } from 'react-router-dom'
 import { siteConfig } from '@/config/site'
 import { journeyCriteria } from '@/features/journey/data/journey'
 import { useLoading } from '@/app/providers/LoadingProvider'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { navigateToSection } from '@/shared/utils/navigation'
 
 const HeroGalaxyScene = lazy(() =>
   import('@/three/marketing/HeroGalaxyScene').then((m) => ({ default: m.HeroGalaxyScene })),
@@ -19,20 +17,13 @@ const framerEase = [0.16, 1, 0.3, 1] as const
 export function HeroSection() {
   const { isExiting, isLoaded } = useLoading()
   const reduceMotion = useReducedMotion()
-  const navigate = useNavigate()
-  const location = useLocation()
 
   // Reveal triggers as soon as loader starts its exit handoff, or if already loaded / reduced motion
   const isRevealed = isExiting || isLoaded || reduceMotion
 
-  const handleLearnMoreClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    navigateToSection('#gioi-thieu', location.pathname, navigate)
-  }
-
   return (
     <section className="home-hero" aria-labelledby="home-title">
-      {/* Background Cosmic Star Atmosphere — reveals smoothly at 0ms */}
+      {/* Background Cosmic Star Atmosphere */}
       <motion.div
         className="home-hero__backdrop"
         aria-hidden="true"
@@ -60,25 +51,15 @@ export function HeroSection() {
       </motion.div>
 
       <div className="home-hero__shell container--wide">
-        {/* Left Column: Copy & Actions */}
+        {/* Left Column: Copy & Primary STARPRINT Action */}
         <div className="home-hero__copy">
-          {/* Eyebrows */}
+          {/* Eyebrow */}
           <div className="hero-eyebrow-row">
-            <motion.p
-              className="hero-campus-line"
-              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}
-              animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-              transition={{ duration: 0.4, delay: 0.08, ease: framerEase }}
-            >
-              <Sparkles size={13} aria-hidden="true" />
-              Trường Đại học Công nghệ · ĐHQGHN
-            </motion.p>
-
             <motion.div
               className="hero-eyebrow"
               initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}
               animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-              transition={{ duration: 0.4, delay: 0.14, ease: framerEase }}
+              transition={{ duration: 0.4, delay: 0.12, ease: framerEase }}
             >
               <span className="hero-eyebrow__dot" aria-hidden="true" />
               5SS Galaxy · Hành trình tỏa sáng
@@ -151,7 +132,7 @@ export function HeroSection() {
             ))}
           </div>
 
-          {/* Staggered CTA Buttons (~540ms) */}
+          {/* Primary Action Button (~540ms) */}
           <div className="hero-actions">
             <motion.div
               initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}
@@ -168,34 +149,6 @@ export function HeroSection() {
                 <ArrowRight size={17} aria-hidden="true" />
               </Link>
             </motion.div>
-
-            <motion.div
-              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}
-              animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-              transition={{ duration: 0.4, delay: 0.60, ease: framerEase }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Link className="btn btn--outline" to="/hanh-trinh-5-tot">
-                Hành trình 5 Tốt
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}
-              animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-              transition={{ duration: 0.4, delay: 0.64, ease: framerEase }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <a
-                className="btn btn--ghost"
-                href="/#gioi-thieu"
-                onClick={handleLearnMoreClick}
-              >
-                Tìm hiểu CLB
-              </a>
-            </motion.div>
           </div>
 
           {/* Local Security / Experience Note (~680ms) */}
@@ -203,14 +156,14 @@ export function HeroSection() {
             className="hero-local-note"
             initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8 }}
             animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-            transition={{ duration: 0.35, delay: 0.68, ease: framerEase }}
+            transition={{ duration: 0.35, delay: 0.64, ease: framerEase }}
           >
             <ShieldCheck size={14} aria-hidden="true" />
             Trải nghiệm 5 Mini-Games · Tạo dấu ấn ngôi sao cá nhân
           </motion.p>
         </div>
 
-        {/* Right Column: 3D Galaxy & Interactive Orbit Badges */}
+        {/* Right Column: 3D Galaxy & Interactive Orbit Badges + Journey CTA Under Star */}
         <motion.div
           className="home-hero__visual"
           initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
@@ -253,32 +206,20 @@ export function HeroSection() {
             })}
           </div>
 
-          {/* Visual Caption (~650ms) */}
+          {/* Journey CTA placed directly under the 3D Star (~600ms) */}
           <motion.div
-            className="hero-visual__caption"
-            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8 }}
-            animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-            transition={{ duration: 0.4, delay: 0.65, ease: framerEase }}
-            aria-hidden="true"
+            className="hero-journey-cta-wrap"
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 14 }}
+            animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+            transition={{ duration: 0.45, delay: 0.60, ease: framerEase }}
           >
-            <span>05</span>
-            <p>
-              <strong>chặng phát triển</strong>
-              <small>Hành trình của riêng bạn</small>
-            </p>
+            <Link className="hero-journey-cta" to="/hanh-trinh-5-tot" aria-label="Khám phá Hành trình 5 Tốt">
+              <span>Hành trình 5 Tốt</span>
+              <ArrowRight size={17} className="hero-journey-cta__arrow" aria-hidden="true" />
+            </Link>
           </motion.div>
         </motion.div>
       </div>
-
-      {/* Affiliation Strip at Bottom of Hero */}
-      <motion.div
-        className="home-hero__affiliation-wrap"
-        initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 12 }}
-        animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-        transition={{ duration: 0.4, delay: 0.70, ease: framerEase }}
-      >
-        <AffiliationMarquee />
-      </motion.div>
     </section>
   )
 }

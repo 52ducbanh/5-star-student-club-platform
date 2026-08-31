@@ -6,10 +6,10 @@ import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
 
 const CRITERIA_COLORS = [
-  '#ffd467', // 1. Đạo đức tốt - Warm Sun Gold
+  '#ff5c5c', // 1. Đạo đức tốt - Vivid Star Red
   '#6cd5f7', // 2. Học tập tốt - Sky Cyan
-  '#5fe3a1', // 3. Thể lực tốt - Mint Spring Green
-  '#ff8b72', // 4. Tình nguyện tốt - Coral Orange
+  '#ffd467', // 3. Thể lực tốt - Warm Sun Gold
+  '#5fe3a1', // 4. Tình nguyện tốt - Mint Spring Green
   '#b794f6', // 5. Hội nhập tốt - Dreamy Lavender Violet
 ]
 
