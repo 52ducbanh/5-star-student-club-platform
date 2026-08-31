@@ -14,14 +14,16 @@ function MainContent() {
   return (
     <>
       {!isLoaded && <LoadingScreen />}
-      <AppShell>
-        <Routes location={location}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/hanh-trinh-5-tot" element={<JourneyPage />} />
-          <Route path="/hoat-dong" element={<ActivitiesPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AppShell>
+      <div aria-hidden={isLoaded ? undefined : true} inert={isLoaded ? undefined : true}>
+        <AppShell>
+          <Routes location={location}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/hanh-trinh-5-tot" element={<JourneyPage />} />
+            <Route path="/hoat-dong" element={<ActivitiesPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AppShell>
+      </div>
     </>
   )
 }

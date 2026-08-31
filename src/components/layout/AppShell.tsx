@@ -102,20 +102,33 @@ export function AppShell({ children }: { children: ReactNode }) {
     const hash = location.hash // e.g. "#gioi-thieu"
     if (!hash) return
 
+    let frameId = 0
     const scrollTimer = window.setTimeout(() => {
-      const el = document.querySelector(hash)
-      if (el) {
-        if (window.__lenis) {
-          window.__lenis.scrollTo(el as HTMLElement, { offset: -80, duration: 1.5 })
-        } else {
-          const headerOffset = 80
-          const top = (el as HTMLElement).getBoundingClientRect().top + window.scrollY - headerOffset
-          window.scrollTo({ top, behavior: 'smooth' })
+      const lenis = window.__lenis
+      // A newly mounted Home page can be much taller than the route we left.
+      // Refresh Lenis' limit before resolving the anchor so it cannot clamp the
+      // target to the previous page's (shorter) scroll range.
+      lenis?.resize()
+
+      frameId = window.requestAnimationFrame(() => {
+        const el = document.querySelector(hash)
+        if (el) {
+          if (lenis) {
+            lenis.resize()
+            lenis.scrollTo(el as HTMLElement, { offset: -80, duration: 1.5 })
+          } else {
+            const headerOffset = 80
+            const top = (el as HTMLElement).getBoundingClientRect().top + window.scrollY - headerOffset
+            window.scrollTo({ top, behavior: 'smooth' })
+          }
         }
-      }
+      })
     }, 150)
 
-    return () => window.clearTimeout(scrollTimer)
+    return () => {
+      window.clearTimeout(scrollTimer)
+      window.cancelAnimationFrame(frameId)
+    }
   }, [location.hash])
 
   return (

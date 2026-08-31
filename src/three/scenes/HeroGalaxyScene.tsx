@@ -200,6 +200,17 @@ function GalaxyAssembly({ active, mobile }: { active: boolean; mobile: boolean }
   const group = useRef<THREE.Group>(null)
   const ringA = useRef<THREE.Mesh>(null)
   const ringB = useRef<THREE.Mesh>(null)
+  const viewportWidth = useThree((state) => state.viewport.width)
+
+  // Keep the orbit halos inside the frustum when the desktop visual column is
+  // relatively narrow. The canvas also has a small CSS overscan, so common
+  // desktop widths retain the original 1:1 scene scale.
+  const horizontalFitScale = THREE.MathUtils.clamp(
+    (viewportWidth / 2 - 0.12) / 2.6,
+    0.84,
+    1,
+  )
+  const sceneScale = mobile ? 0.82 : horizontalFitScale
 
   useFrame(({ clock }, delta) => {
     if (!active) return
@@ -209,7 +220,7 @@ function GalaxyAssembly({ active, mobile }: { active: boolean; mobile: boolean }
   })
 
   return (
-    <group ref={group} scale={mobile ? 0.82 : 1}>
+    <group ref={group} scale={sceneScale}>
       <CentralStar active={active} />
 
       {/* Delicate Inner Planetary Orbit Trail */}

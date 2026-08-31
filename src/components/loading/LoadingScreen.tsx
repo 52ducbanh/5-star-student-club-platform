@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'motion/react'
 import { useProgress } from '@react-three/drei'
 import { LoadingStarPentagon } from './LoadingStarPentagon'
@@ -6,11 +6,12 @@ import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { useLoading } from '../../context/LoadingContext'
 import { Sparkles } from 'lucide-react'
 
-const MIN_INTRO_DURATION_DEFAULT = 1600 // 1.6s minimum intro
-const MIN_INTRO_DURATION_CACHED = 600 // 0.6s for return visits in same session
-const MIN_INTRO_DURATION_REDUCED = 500 // 0.5s if user prefers reduced motion
-const ANTICIPATION_DURATION = 260 // 260ms anticipation at 100%
-const EXIT_TRANSITION_DURATION = 0.42 // 420ms exit fade/blur
+const MIN_INTRO_DURATION_DEFAULT = 900
+const MIN_INTRO_DURATION_REDUCED = 250
+const MAX_ASSET_WAIT_DEFAULT = 1400
+const MAX_ASSET_WAIT_REDUCED = 450
+const ANTICIPATION_DURATION = 140
+const EXIT_TRANSITION_DURATION = 0.28
 
 export function LoadingScreen() {
   const { startHeroReveal, completeLoading } = useLoading()
@@ -21,27 +22,18 @@ export function LoadingScreen() {
   const [isExiting, setIsExiting] = useState(false)
   const [is100Percent, setIs100Percent] = useState(false)
 
-  const isCachedSession = useMemo(() => {
-    try {
-      return Boolean(sessionStorage.getItem('5ss_visited_v1'))
-    } catch {
-      return false
-    }
-  }, [])
-
-  const minDuration = useMemo(() => {
-    if (prefersReduced) return MIN_INTRO_DURATION_REDUCED
-    if (isCachedSession) return MIN_INTRO_DURATION_CACHED
-    return MIN_INTRO_DURATION_DEFAULT
-  }, [prefersReduced, isCachedSession])
+  const minDuration = prefersReduced ? MIN_INTRO_DURATION_REDUCED : MIN_INTRO_DURATION_DEFAULT
+  const maxAssetWait = prefersReduced ? MAX_ASSET_WAIT_REDUCED : MAX_ASSET_WAIT_DEFAULT
 
   // Stable references to prevent effect restarting
   const minDurationRef = useRef(minDuration)
+  const maxAssetWaitRef = useRef(maxAssetWait)
   const r3fRef = useRef({ progress: r3fProgress, active: r3fActive })
 
   useEffect(() => {
     minDurationRef.current = minDuration
-  }, [minDuration])
+    maxAssetWaitRef.current = maxAssetWait
+  }, [maxAssetWait, minDuration])
 
   useEffect(() => {
     r3fRef.current = { progress: r3fProgress, active: r3fActive }
@@ -102,6 +94,7 @@ export function LoadingScreen() {
       let targetProgress = Math.min(compositeReal, timePercent)
 
       const canComplete = allAssetsReady && elapsed >= currentMinDuration
+      const reachedAssetDeadline = elapsed >= maxAssetWaitRef.current
 
       if (!canComplete && targetProgress >= 99) {
         targetProgress = 99
@@ -117,7 +110,7 @@ export function LoadingScreen() {
         // Monotonic non-decreasing guarantee: never drop below prev
         const next = Math.max(prev, Math.min(targetProgress, prev + step))
 
-        if (canComplete && (next >= 99.4 || diff < 0.2)) {
+        if (canComplete || reachedAssetDeadline) {
           isFinishedLoop.current = true
           return 100
         }
@@ -142,10 +135,6 @@ export function LoadingScreen() {
     if (displayProgress >= 100 && !hasTriggeredExit.current) {
       hasTriggeredExit.current = true
       setIs100Percent(true)
-
-      try {
-        sessionStorage.setItem('5ss_visited_v1', 'true')
-      } catch {}
 
       let fallbackTimer: ReturnType<typeof setTimeout> | number | undefined
 
@@ -173,7 +162,9 @@ export function LoadingScreen() {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0b234d] select-none overflow-hidden"
+      className="loading-screen fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0b234d] select-none overflow-hidden"
+      aria-label="Đang tải trải nghiệm 5SS UET"
+      aria-busy={!isExiting}
       initial={{ opacity: 1 }}
       animate={
         isExiting
@@ -240,7 +231,11 @@ export function LoadingScreen() {
           />
         </div>
 
-        <span className="text-[11px] font-bold tracking-wider text-[#b6def5] uppercase mt-1">
+        <span
+          className="text-[11px] font-bold tracking-wider text-[#b6def5] uppercase mt-1"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {displayProgress < 25
             ? 'Khởi tạo không gian số...'
             : displayProgress < 50

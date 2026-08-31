@@ -16,6 +16,7 @@ const LoadingContext = createContext<LoadingContextType>({
 
 export function LoadingProvider({ children }: { children: ReactNode }) {
   const [isExiting, setIsExiting] = useState(false)
+  // A full page load, including F5, always replays the short cinematic intro.
   const [isLoaded, setIsLoaded] = useState(false)
 
   const startHeroReveal = () => {

@@ -119,6 +119,27 @@ body {
     margin-inline: auto;
   }
 
+  /* Affiliation Strip Tablet */
+  .affiliation-marquee {
+    width: min(540px, 92vw);
+    padding: 7px 16px;
+    gap: 12px;
+  }
+  .affiliation-marquee__label {
+    font-size: 11px;
+    padding-right: 10px;
+  }
+  .affiliation-marquee__group {
+    height: 28px;
+  }
+  .affiliation-marquee__group img {
+    height: 26px;
+  }
+  .affiliation-marquee__viewport {
+    --affiliation-marquee-gap: 20px;
+    --affiliation-marquee-half-gap: 10px;
+  }
+
   /* About section */
   .about-purpose { grid-template-columns: 1fr; }
   .value-grid { grid-template-columns: repeat(2, 1fr); }
@@ -511,9 +532,41 @@ body {
   }
 
   /* Affiliation marquee */
+  .home-hero__affiliation-wrap {
+    margin-top: 14px;
+    width: 100%;
+  }
+
   .affiliation-marquee {
     width: 100%;
     max-width: 100%;
+    padding: 6px 12px;
+    gap: 10px;
+    border-radius: 999px;
+  }
+
+  .affiliation-marquee__label {
+    font-size: 10px;
+    padding-right: 8px;
+    letter-spacing: 0.06em;
+  }
+
+  .affiliation-marquee__label svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .affiliation-marquee__group {
+    height: 24px;
+  }
+
+  .affiliation-marquee__group img {
+    height: 22px;
+  }
+
+  .affiliation-marquee__viewport {
+    --affiliation-marquee-gap: 16px;
+    --affiliation-marquee-half-gap: 8px;
   }
 
   /* Journey Page Mobile (<768px) */
@@ -575,13 +628,26 @@ body {
   }
 
   /* Criteria signature layout on mobile */
+  .criteria-signature-layout,
+  .criteria-selector-col,
+  .criteria-stage-col {
+    width: 100%;
+    min-width: 0;
+  }
+
   .criteria-selector-col {
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
   }
   .criteria-selector-card {
+    width: 100%;
+    min-width: 0;
     padding: 12px 14px;
+  }
+  .criteria-selector-card:hover,
+  .criteria-selector-card.is-selected {
+    transform: none;
   }
   .criteria-selector-card__subtitle {
     display: none;

@@ -13,8 +13,7 @@ export function navigateToSection(
   const cleanHash = hash.startsWith('#') ? hash : `#${hash}`
   const targetId = cleanHash.slice(1)
 
-  if (pathname === '/') {
-    // Already on Home: smooth scroll to element without page reload
+  const scrollToTarget = () => {
     const el = document.getElementById(targetId)
     if (el) {
       const isMobile = window.innerWidth <= 768
@@ -26,13 +25,16 @@ export function navigateToSection(
         const top = el.getBoundingClientRect().top + window.scrollY - headerOffset
         window.scrollTo({ top, behavior: 'smooth' })
       }
-
-      // Update URL hash without polluting history excessively
-      window.history.pushState(null, '', cleanHash)
     }
+  }
+
+  if (pathname === '/' && window.location.hash === cleanHash) {
+    // Re-selecting the active anchor should still return to its current section.
+    scrollToTarget()
   } else {
-    // On sub-page: navigate to Home with hash
-    navigate(`/${cleanHash}`)
+    // Keep React Router as the sole owner of browser history so Back/Forward
+    // can replay the anchor and trigger AppShell's hash-scroll effect.
+    navigate({ pathname: '/', hash: cleanHash })
   }
 
   onComplete?.()
@@ -48,12 +50,13 @@ export function navigateToHomeTop(
 ) {
   if (pathname === '/') {
     if (window.location.hash) {
-      window.history.pushState(null, '', '/')
-    }
-    if (window.__lenis) {
-      window.__lenis.scrollTo(0, { duration: 1.2 })
+      navigate('/')
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      if (window.__lenis) {
+        window.__lenis.scrollTo(0, { duration: 1.2 })
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     }
   } else {
     navigate('/')
