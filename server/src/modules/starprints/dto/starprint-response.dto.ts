@@ -1,9 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type {
+  GlobalHiddenProfile,
   LegacyStarEffect,
   LegacyStarPalette,
+  StarEffect,
   StarprintResponse,
   StarprintType,
+  WingPalette,
 } from '@5ss/contracts';
 
 export class StarprintTypeDto implements StarprintType {
@@ -34,13 +37,25 @@ export class StarprintResponseDto implements StarprintResponse {
   type: StarprintTypeDto;
 
   @ApiProperty()
-  effect: LegacyStarEffect;
+  effect: LegacyStarEffect | StarEffect;
 
   @ApiProperty({ type: [String] })
-  palette: LegacyStarPalette;
+  palette: LegacyStarPalette | WingPalette;
+
+  @ApiProperty({ type: [String], required: false, nullable: true })
+  wingPalette?: WingPalette | null;
 
   @ApiProperty()
   baseColor: string;
+
+  @ApiProperty({ required: false })
+  signatureColor?: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  publicStarId?: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  globalProfile7D?: GlobalHiddenProfile | null;
 
   @ApiProperty()
   isPublic: boolean;

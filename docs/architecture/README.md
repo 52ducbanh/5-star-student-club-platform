@@ -42,6 +42,7 @@ BrowserRouter
 ├── GameShell
 │   ├── /starprint
 │   ├── /starprint/result/:id
+│   ├── /star/:id
 │   └── /sky
 └── MarketingShell
     ├── /

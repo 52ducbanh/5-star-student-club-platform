@@ -1,50 +1,31 @@
-﻿import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useStarprintStore } from '../../store/useStarprintStore'
 import { submitGameWithReconciliation } from '../../services/gameSubmission'
-import type { SenseRawResult } from '../../types/game.types'
+import { SENSE_SCENARIOS_CLIENT } from './sense-scenarios'
+import { STARPRINT_VERSIONS } from '@5ss/contracts'
+import type { SenseDecisionV2, SenseRawResultV2 } from '@5ss/contracts'
 
-const SCENARIOS = [
-  {
-    id: 's1',
-    situation: 'Bạn nhận ra đồng đội đang mắc lỗi nhỏ trong bài thuyết trình quan trọng. Bạn sẽ?',
-    options: [
-      { id: 'a', text: 'Nhắn tin riêng ngay để sửa kịp' },
-      { id: 'b', text: 'Chờ sau buổi nói với đồng đội' },
-      { id: 'c', text: 'Ghi chú giúp đội rút kinh nghiệm sau' },
-    ],
-  },
-  {
-    id: 's2',
-    situation: 'Nhóm dự án bất đồng về hướng đi. Bạn làm gì?',
-    options: [
-      { id: 'a', text: 'Đề xuất vote nhanh để tiếp tục' },
-      { id: 'b', text: 'Nghe từng quan điểm rồi tổng hợp' },
-      { id: 'c', text: 'Đề xuất thử nghiệm nhỏ cả hai hướng' },
-    ],
-  },
-  {
-    id: 's3',
-    situation: 'Có deadline cấp bách nhưng đồng đội cần giúp đỡ. Bạn?',
-    options: [
-      { id: 'a', text: 'Dành 10 phút hỗ trợ ngắn, sau đó tập trung lại' },
-      { id: 'b', text: 'Hoàn thành phần mình trước rồi hỗ trợ' },
-      { id: 'c', text: 'Cùng ưu tiên lại để cả nhóm xử lý' },
-    ],
-  },
-]
+const SCENARIO_DURATION_S = 10
+const SCENARIOS = SENSE_SCENARIOS_CLIENT
 
 export function SenseGame() {
   const [currentS, setCurrentS] = useState(0)
-  const [decisions, setDecisions] = useState<SenseRawResult['decisions']>([])
-  const [scenarioStart, setScenarioStart] = useState(() => Date.now())
-  const [gameStart] = useState(() => Date.now())
+  const [decisions, setDecisions] = useState<SenseDecisionV2[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const finalResultRef = useRef<SenseRawResult | null>(null)
+  const [timeLeft, setTimeLeft] = useState(SCENARIO_DURATION_S)
+
+  const scenarioStartRef = useRef(Date.now())
+  const gameStartRef = useRef(Date.now())
+  const decidedRef = useRef(false)
+  const finalResultRef = useRef<SenseRawResultV2 | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const { sessionId, setStep, markGameCompleted, addGameResult } = useStarprintStore()
 
   const submitFinal = useCallback(
-    async (rawResult: SenseRawResult) => {
+    async (rawResult: SenseRawResultV2) => {
       if (!sessionId) return
       setSubmitting(true)
       setError(null)
@@ -61,69 +42,141 @@ export function SenseGame() {
       })
 
       if (!res.success) {
-        setError(res.error || 'Lỗi kết nối server. Vui lòng thử lại.')
+        setError(res.error || 'Lỗi kết nối máy chủ khi ghi nhận kết quả. Vui lòng bấm thử lại.')
+        decidedRef.current = false
+        setIsLocked(false)
       }
       setSubmitting(false)
     },
     [sessionId, markGameCompleted, addGameResult, setStep],
   )
 
-  const chooseOption = useCallback(
-    async (optionId: string) => {
-      if (submitting) return
-      const elapsed = Date.now() - scenarioStart
-      const newDecisions: SenseRawResult['decisions'] = [
-        ...decisions,
-        { scenarioId: SCENARIOS[currentS].id, optionId, responseTimeMs: elapsed },
-      ]
+  const recordAndAdvance = useCallback(
+    async (optionId: string | null, timedOut: boolean) => {
+      // Synchronously lock input to prevent double clicks
+      if (decidedRef.current) return
+      decidedRef.current = true
+      setIsLocked(true)
+
+      const responseTimeMs = Math.min(Date.now() - scenarioStartRef.current, SCENARIO_DURATION_S * 1000)
+      const currentScenario = SCENARIOS[currentS]
+      const decisionRecord: SenseDecisionV2 = {
+        scenarioId: currentScenario.id,
+        optionId,
+        responseTimeMs,
+        timedOut,
+      }
+
+      const nextDecisions = [...decisions, decisionRecord]
+      setDecisions(nextDecisions)
 
       if (currentS < SCENARIOS.length - 1) {
-        setDecisions(newDecisions)
-        setCurrentS((s) => s + 1)
-        setScenarioStart(Date.now())
+        setTimeout(() => {
+          setCurrentS((prev) => prev + 1)
+          setTimeLeft(SCENARIO_DURATION_S)
+          scenarioStartRef.current = Date.now()
+          decidedRef.current = false
+          setIsLocked(false)
+        }, 150)
       } else {
-        const rawResult: SenseRawResult = {
+        const rawResult: SenseRawResultV2 = {
           gameId: 'sense',
-          decisions: newDecisions,
-          totalDurationMs: Date.now() - gameStart,
+          payloadVersion: STARPRINT_VERSIONS.officialV2.rawPayload,
+          contentVersion: STARPRINT_VERSIONS.officialV2.content,
+          startedAtMs: gameStartRef.current,
+          completedAtMs: Date.now(),
+          decisions: nextDecisions,
         }
         await submitFinal(rawResult)
       }
     },
-    [decisions, currentS, scenarioStart, gameStart, submitting, submitFinal],
+    [decisions, currentS, submitFinal],
   )
+
+  // Scenario timer
+  useEffect(() => {
+    if (submitting || isLocked) return
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [currentS, submitting, isLocked])
+
+  // Handle timeout
+  useEffect(() => {
+    if (timeLeft === 0 && !submitting && !decidedRef.current) {
+      void recordAndAdvance(null, true)
+    }
+  }, [timeLeft, submitting, recordAndAdvance])
+
+  const handleOptionClick = (optionId: string) => {
+    if (isLocked || submitting || decidedRef.current) return
+    void recordAndAdvance(optionId, false)
+  }
 
   const retrySubmit = () => {
     if (finalResultRef.current) {
       void submitFinal(finalResultRef.current)
+    } else {
+      setError(null)
+      decidedRef.current = false
+      setIsLocked(false)
+      void recordAndAdvance(null, true)
     }
   }
 
   const s = SCENARIOS[currentS]
 
   return (
-    <div className="game-step sense-game">
-      <div className="game-progress">💫 SENSE · Tình huống {currentS + 1}/{SCENARIOS.length}</div>
+    <div className="game-step sense-game" role="region" aria-label="Trò chơi SENSE">
+      <div className="game-progress" aria-live="polite">
+        <span className="game-progress__badge">💫 SENSE</span>
+        <span className="game-progress__step">Tình huống {currentS + 1}/{SCENARIOS.length} · {s.categoryLabel}</span>
+        <span className={`game-progress__timer ${timeLeft <= 3 ? 'timer--urgent' : ''}`} aria-label={`Thời gian còn lại: ${timeLeft} giây`}>
+          ⏱️ {timeLeft}s
+        </span>
+      </div>
+
+      <div className="game-progress-bar" role="progressbar" aria-valuenow={((currentS + 1) / SCENARIOS.length) * 100} aria-valuemin={0} aria-valuemax={100}>
+        <div className="game-progress-bar__fill" style={{ width: `${((currentS + 1) / SCENARIOS.length) * 100}%` }} />
+      </div>
+
       <p className="sense-game__situation">{s.situation}</p>
-      <div className="sense-game__options">
+
+      <div className="sense-game__options" role="group" aria-label="Các phương án xử lý">
         {s.options.map((opt) => (
           <button
             key={opt.id}
+            type="button"
             className="sense-game__option btn btn--outline"
-            onClick={() => chooseOption(opt.id)}
-            disabled={submitting}
+            onClick={() => handleOptionClick(opt.id)}
+            disabled={submitting || isLocked}
           >
-            {opt.text}
+            <span className="sense-game__option-id">{opt.id}.</span> {opt.text}
           </button>
         ))}
       </div>
+
       {error && (
-        <div className="game-error-box">
-          <p className="field-error" role="alert">{error}</p>
-          <button className="btn btn--primary" onClick={retrySubmit}>Thử gửi lại 🔄</button>
+        <div className="game-error-box" role="alert">
+          <p className="field-error">{error}</p>
+          <button type="button" className="btn btn--primary" onClick={retrySubmit}>
+            Thử gửi lại 🔄
+          </button>
         </div>
       )}
-      {submitting && <p>Đang ghi nhận kết quả...</p>}
+
+      {submitting && <p className="game-submitting" aria-live="polite">Đang ghi nhận kết quả...</p>}
     </div>
   )
 }

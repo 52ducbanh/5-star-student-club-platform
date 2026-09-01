@@ -1,162 +1,232 @@
-﻿import { useState, useEffect, useCallback, useRef } from "react"
-import { useStarprintStore } from "../../store/useStarprintStore"
-import { submitGameWithReconciliation } from "../../services/gameSubmission"
-import type { SyncRawResult } from "../../types/game.types"
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useStarprintStore } from '../../store/useStarprintStore'
+import { submitGameWithReconciliation } from '../../services/gameSubmission'
+import { SYNC_CARDS_CLIENT, SYNC_DECK_ID, shuffleDeckWithSeed, type ClientSyncCard } from './sync-deck'
+import { STARPRINT_VERSIONS } from '@5ss/contracts'
+import type { SyncRawResultV2, SyncEventV2 } from '@5ss/contracts'
 
-const PAIRS = [
-  { pairId: "p1", symbol: "🌍" }, { pairId: "p2", symbol: "🤝" },
-  { pairId: "p3", symbol: "💡" }, { pairId: "p4", symbol: "🌐" },
-]
-
-type CardState = "hidden" | "revealed" | "matched"
-interface Card { id: string; pairId: string; symbol: string; state: CardState }
-
-function createCards(): Card[] {
-  const cards: Card[] = PAIRS.flatMap((pair) => [
-    { id: `${pair.pairId}-a`, pairId: pair.pairId, symbol: pair.symbol, state: "hidden" as CardState },
-    { id: `${pair.pairId}-b`, pairId: pair.pairId, symbol: pair.symbol, state: "hidden" as CardState },
-  ])
-  for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cards[i], cards[j]] = [cards[j], cards[i]]
-  }
-  return cards
-}
-
-const GAME_DURATION_MS = 25000
+const GAME_DURATION_S = 30
+const TOTAL_PAIRS = 10
 
 export function SyncGame() {
-  const [cards, setCards] = useState<Card[]>(createCards)
-  const [flipped, setFlipped] = useState<string[]>([])
-  const [mismatches, setMismatches] = useState(0)
-  const [totalFlips, setTotalFlips] = useState(0)
-  const [pairsMatched, setPairsMatched] = useState(0)
-  const [elapsed, setElapsed] = useState(0)
-  const [start] = useState(() => Date.now())
-  const [locked, setLocked] = useState(false)
-  const [isTerminal, setIsTerminal] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const finalResultRef = useRef<SyncRawResult | null>(null)
   const { sessionId, setStep, markGameCompleted, addGameResult } = useStarprintStore()
 
-  const submitFinal = useCallback(async (matched: number, isCompleted: boolean, currentMismatches: number, currentFlips: number) => {
-    if (!sessionId) return
-    setSubmitting(true)
-    setError(null)
-    const rawResult: SyncRawResult = {
-      gameId: "sync",
-      pairsTotal: PAIRS.length,
-      pairsMatched: matched,
-      mismatches: currentMismatches,
-      flips: currentFlips,
-      elapsedMs: Date.now() - start,
-      completed: isCompleted,
-    }
-    finalResultRef.current = rawResult
+  // Initialize shuffled deck using sessionId as deterministic seed
+  const [cards] = useState<ClientSyncCard[]>(() =>
+    shuffleDeckWithSeed(SYNC_CARDS_CLIENT, sessionId || 'default-sync-seed'),
+  )
 
-    const res = await submitGameWithReconciliation({
-      sessionId,
-      gameId: "sync",
-      rawResult,
-      nextStep: "COLOR_PICKER",
-      markGameCompleted,
-      addGameResult,
-      setStep,
+  const [flippedIndices, setFlippedIndices] = useState<number[]>([])
+  const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set())
+  const [isLocked, setIsLocked] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(GAME_DURATION_S)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const gameStartRef = useRef(Date.now())
+  const eventsRef = useRef<SyncEventV2[]>([])
+  const finalResultRef = useRef<SyncRawResultV2 | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isFinishedRef = useRef(false)
+
+  const submitFinal = useCallback(
+    async (rawResult: SyncRawResultV2) => {
+      if (!sessionId || isFinishedRef.current) return
+      isFinishedRef.current = true
+      setSubmitting(true)
+      setError(null)
+      finalResultRef.current = rawResult
+
+      const res = await submitGameWithReconciliation({
+        sessionId,
+        gameId: 'sync',
+        rawResult,
+        nextStep: 'COLOR_PICKER',
+        markGameCompleted,
+        addGameResult,
+        setStep,
+      })
+
+      if (!res.success) {
+        setError(res.error || 'Lỗi kết nối khi gửi kết quả. Vui lòng bấm thử lại.')
+        setSubmitting(false)
+        isFinishedRef.current = false
+      }
+    },
+    [sessionId, markGameCompleted, addGameResult, setStep],
+  )
+
+  const finishGame = useCallback(
+    (completed: boolean) => {
+      if (isFinishedRef.current) return
+      const elapsed = Math.min(Date.now() - gameStartRef.current, GAME_DURATION_S * 1000)
+
+      const rawResult: SyncRawResultV2 = {
+        gameId: 'sync',
+        payloadVersion: STARPRINT_VERSIONS.officialV2.rawPayload,
+        contentVersion: STARPRINT_VERSIONS.officialV2.content,
+        startedAtMs: gameStartRef.current,
+        completedAtMs: Date.now(),
+        deckId: SYNC_DECK_ID,
+        cardOrder: cards.map((c) => c.cardId),
+        durationMs: elapsed,
+        completed,
+        events: [...eventsRef.current],
+      }
+
+      void submitFinal(rawResult)
+    },
+    [cards, submitFinal],
+  )
+
+  // 30s Countdown Timer
+  useEffect(() => {
+    if (submitting) return
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [submitting])
+
+  // Handle timeout
+  useEffect(() => {
+    if (timeLeft === 0 && !submitting && !isFinishedRef.current) {
+      finishGame(matchedPairs.size === TOTAL_PAIRS)
+    }
+  }, [timeLeft, submitting, matchedPairs, finishGame])
+
+  const handleCardClick = (index: number) => {
+    if (isLocked || submitting || isFinishedRef.current) return
+
+    const card = cards[index]
+    if (!card || matchedPairs.has(card.pairId)) return
+    if (flippedIndices.includes(index)) return // already face up
+
+    const atMs = Date.now() - gameStartRef.current
+    eventsRef.current.push({
+      type: 'card-selected',
+      atMs,
+      cardId: card.cardId,
     })
 
-    if (!res.success) {
-      setError(res.error || "Lỗi gửi kết quả. Thử lại?")
-    }
-    setSubmitting(false)
-  }, [start, sessionId, setStep, markGameCompleted, addGameResult])
+    if (flippedIndices.length === 0) {
+      // First card flipped
+      setFlippedIndices([index])
+    } else if (flippedIndices.length === 1) {
+      // Second card flipped
+      const firstIndex = flippedIndices[0]
+      const firstCard = cards[firstIndex]
+      const nextFlipped = [firstIndex, index]
+      setFlippedIndices(nextFlipped)
 
-  useEffect(() => {
-    if (isTerminal || pairsMatched >= PAIRS.length) return
-    const interval = setInterval(() => {
-      const el = Date.now() - start
-      setElapsed(el)
-      if (el >= GAME_DURATION_MS) {
-        clearInterval(interval)
-        setIsTerminal(true)
-        setLocked(true)
-        void submitFinal(pairsMatched, false, mismatches, totalFlips)
-      }
-    }, 200)
-    return () => clearInterval(interval)
-  }, [isTerminal, pairsMatched, start, mismatches, totalFlips, submitFinal])
+      const isMatch = firstCard.pairId === card.pairId
+      eventsRef.current.push({
+        type: 'pair-resolved',
+        atMs: Date.now() - gameStartRef.current,
+        firstCardId: firstCard.cardId,
+        secondCardId: card.cardId,
+        matched: isMatch,
+      })
 
-  const flipCard = (id: string) => {
-    if (locked || isTerminal || submitting) return
-    const card = cards.find((c) => c.id === id)
-    if (!card || card.state !== "hidden" || flipped.includes(id)) return
-    const newFlips = totalFlips + 1
-    setTotalFlips(newFlips)
-    const newFlipped = [...flipped, id]
-    setFlipped(newFlipped)
-    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, state: "revealed" } : c)))
+      if (isMatch) {
+        // Matched!
+        const nextMatched = new Set([...matchedPairs, card.pairId])
+        setMatchedPairs(nextMatched)
+        setFlippedIndices([])
 
-    if (newFlipped.length === 2) {
-      setLocked(true)
-      const cardA = cards.find((c) => c.id === newFlipped[0])!
-      const cardB = cards.find((c) => c.id === newFlipped[1])!
-      if (cardA.pairId === cardB.pairId) {
-        const newMatched = pairsMatched + 1
-        setPairsMatched(newMatched)
-        setCards((prev) => prev.map((c) => (newFlipped.includes(c.id) ? { ...c, state: "matched" } : c)))
-        setFlipped([])
-        setLocked(false)
-        if (newMatched >= PAIRS.length) {
-          setIsTerminal(true)
-          void submitFinal(newMatched, true, mismatches, newFlips)
+        // Check if all 10 pairs matched early
+        if (nextMatched.size === TOTAL_PAIRS) {
+          setTimeout(() => {
+            finishGame(true)
+          }, 500)
         }
       } else {
-        const newMismatches = mismatches + 1
-        setMismatches(newMismatches)
+        // Mismatch: lock interactions for 600ms, then flip back
+        setIsLocked(true)
         setTimeout(() => {
-          setCards((prev) => prev.map((c) => (newFlipped.includes(c.id) ? { ...c, state: "hidden" } : c)))
-          setFlipped([])
-          setLocked(false)
-        }, 900)
+          setFlippedIndices([])
+          setIsLocked(false)
+        }, 600)
       }
     }
   }
 
   const retrySubmit = () => {
     if (finalResultRef.current) {
-      const { pairsMatched: pm, completed: done, mismatches: mm, flips: fl } = finalResultRef.current
-      void submitFinal(pm, done, mm, fl)
+      void submitFinal(finalResultRef.current)
     }
   }
 
-  const remaining = Math.max(0, GAME_DURATION_MS - elapsed)
-
   return (
-    <div className="game-step sync-game">
-      <div className="game-progress">🌐 SYNC · {Math.ceil(remaining / 1000)}s · {pairsMatched}/{PAIRS.length} cặp</div>
-      <h2>Tìm cặp đôi hòa nhịp</h2>
-      <p>Tìm và ghép các cặp biểu tượng tương ứng!</p>
-      <div className="sync-game__board">
-        {cards.map((card) => (
-          <button
-            key={card.id}
-            className={["sync-card", card.state].join(" ")}
-            onClick={() => flipCard(card.id)}
-            disabled={card.state === "matched" || locked || isTerminal || submitting}
-            aria-label={card.state === "hidden" ? "Lật thẻ" : card.symbol}
-            aria-pressed={card.state !== "hidden"}
-          >
-            {card.state !== "hidden" ? card.symbol : "?"}
-          </button>
-        ))}
+    <div className="game-step sync-game" role="region" aria-label="Trò chơi SYNC ghép cặp ngữ nghĩa">
+      <div className="game-progress" aria-live="polite">
+        <span className="game-progress__badge">🔄 SYNC</span>
+        <span className="game-progress__step">
+          Đã ghép: {matchedPairs.size}/{TOTAL_PAIRS} cặp
+        </span>
+        <span className={`game-progress__timer ${timeLeft <= 5 ? 'timer--urgent' : ''}`} aria-label={`Thời gian: ${timeLeft} giây`}>
+          ⏱️ {timeLeft}s
+        </span>
       </div>
+
+      <div className="game-progress-bar" role="progressbar" aria-valuenow={(matchedPairs.size / TOTAL_PAIRS) * 100} aria-valuemin={0} aria-valuemax={100}>
+        <div className="game-progress-bar__fill" style={{ width: `${(matchedPairs.size / TOTAL_PAIRS) * 100}%` }} />
+      </div>
+
+      <p className="sync-game__hint">
+        Tìm các cặp khái niệm hoặc biểu tượng tương đồng ngữ nghĩa (20 thẻ · 10 cặp)
+      </p>
+
+      {/* 20 Cards Grid (Responsive ~4x5 on mobile, ~5x4 on desktop) */}
+      <div className="sync-grid" role="group" aria-label="Lưới thẻ ghép cặp">
+        {cards.map((c, i) => {
+          const isMatched = matchedPairs.has(c.pairId)
+          const isFlipped = flippedIndices.includes(i) || isMatched
+
+          return (
+            <button
+              key={c.cardId}
+              type="button"
+              className={`sync-card ${isFlipped ? 'card--flipped' : ''} ${isMatched ? 'card--matched' : ''}`}
+              onClick={() => handleCardClick(i)}
+              disabled={isFlipped || isLocked || submitting}
+              aria-label={isFlipped ? c.display : `Thẻ số ${i + 1}`}
+            >
+              <div className="sync-card__inner">
+                <div className="sync-card__front">
+                  <span>?</span>
+                </div>
+                <div className="sync-card__back">
+                  <span className={`sync-card__content ${c.displayType === 'emoji' ? 'content--emoji' : 'content--concept'}`}>
+                    {c.display}
+                  </span>
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
       {error && (
-        <div className="game-error-box">
-          <p className="field-error" role="alert">{error}</p>
-          <button className="btn btn--primary" onClick={retrySubmit}>Thử gửi lại 🔄</button>
+        <div className="game-error-box" role="alert">
+          <p className="field-error">{error}</p>
+          <button type="button" className="btn btn--primary" onClick={retrySubmit}>
+            Thử gửi lại 🔄
+          </button>
         </div>
       )}
-      {submitting && <p>Đang ghi nhận kết quả...</p>}
+
+      {submitting && <p className="game-submitting" aria-live="polite">Đang ghi nhận kết quả SYNC...</p>}
     </div>
   )
 }

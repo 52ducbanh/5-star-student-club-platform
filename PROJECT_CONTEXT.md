@@ -11,15 +11,23 @@
 1. A public marketing experience for the club with 3D solar system, centered Journey CTA beneath the 3D star, desktop static student affiliation logo showcase (with responsive mobile marquee), and synchronized 5 criteria color system.
 2. A browser-local checklist and constellation journey with criteria deep-linking.
 3. Server-backed news, events, event registration, and contact submission experiences (NestJS + PostgreSQL).
-4. STARPRINT Platform:
-   - **Current Implementation:** server-backed five-game flow (`solve`, `sense`, `sprint`, `support`, `sync`) with provisional/legacy 5-dimension scoring (`focus`, `explore`, `energy`, `social`, `adapt`) and 5 legacy star archetypes (`NAVIGATOR`, `EXPLORER`, `CATALYST`, `CONNECTOR`, `VISIONARY`).
-   - **Official v2 foundation implemented:** shared contracts now define the canonical 7 Hidden Traits, official Star Type/effect identifiers, fixed five-color wing palette, version families, explicit legacy/v2 raw-result maps, and server-side Local/Global Hidden Profile normalization/aggregation. The v2 engine is deliberately not wired into the current game submission/generation path yet.
-   - **Upcoming migrations:** the detailed specification in `Main question for building minigame in 5SS web` still requires game-by-game migration, cosine classification, OKLCH palette generation, Result/Public Star ID work, and additive persistence changes. The current gameplay and generated results remain legacy v1 until those checkpoints are completed.
+4. STARPRINT Platform (v2 Implemented):
+   - **Current Implementation:** fully integrated official STARPRINT v2 architecture spanning client and server.
+   - **Gameplay v2:** 5 mini-games:
+     - SOLVE v2 (5 categories, 5 options A–E, 6s per-question timer, synchronous input locking, server-authoritative scoring).
+     - SENSE v2 (3 scenarios, 5 options A–E, 10s per-scenario timer, synchronous input locking, tendency activations).
+     - SPRINT v2 (finite 3-lane runner, deterministic Track A/B/C, obstacle collision slow down without Game Over, max 2 attempts).
+     - SUPPORT v2 (deterministic 3-puzzle Cut-the-Rope, 10s timer, wrong cut sequence auto-reset with timer continuation).
+     - SYNC v2 (20 cards / 10 semantic pairs, 30s hard timer, mismatch lock 600ms, responsive 4×5/5×4 grid).
+   - **Hidden Traits & Engine:** 7 Canonical Hidden Traits (`sharpness`, `insight`, `precision`, `initiative`, `connection`, `adaptation`, `persistence`), Local Trait Profiles with strict null vs 0 semantics, and 7D Global Hidden Profile aggregation.
+   - **Classification & Effects:** Cosine classifier against 5 official archetypes (`STRATEGIST`, `SPARK`, `SYNERGIST`, `SEEKER`, `SUSTAINER`) with official effects (`SHIMMER`, `SPARK`, `ORBIT`, `FLOW`, `PULSE`), Euclidean tiebreak, priority order, and zero-norm template fallback.
+   - **OKLCH Palette:** User-selected Signature Color + stage local profile projections producing deterministic 5-wing OKLCH palette with $\Delta E_{OK} < 0.06$ similar color guard.
+   - **Public Star ID & Results:** Unique short `publicStarId` (`STAR-XXXXXXXX`), route `/star/:id`, high-res image download, link sharing, and idempotent Sky publication.
 5. 5SS Sky: a privacy-filtered public collection with REST loading, Socket.IO updates, 3D rendering, and a grid fallback.
 
 ### Status language
 
-- **Implemented:** the current client/server lifecycle, validation, persistence, image processing, publication transaction, live Sky update, dynamic news and events API, event registration with capacity and duplicate identity enforcement, and contact form submissions.
+- **Implemented:** the current client/server lifecycle, validation, persistence, image processing, publication transaction, live Sky update, dynamic news and events API, event registration with capacity and duplicate identity enforcement, contact form submissions, full STARPRINT v2 mini-games, scoring engine, 7D hidden traits, 5-archetype classifier, OKLCH 5-wing palette, public Star ID, and download capability.
 - **Demo/provisional:** marketing copy, initial news/events seed data, official club leadership/recruitment links, all game content and balance, five-dimensional scoring, archetype names/descriptions, and type/effect mapping.
 - **Not present:** authentication, user accounts, moderation/admin dashboard UI, recognized evidence submission, production media storage (S3/GCS), backend deployment infrastructure, and automated client tests.
 
@@ -320,9 +328,10 @@ The Jest test suite discovers `*.spec.ts` and `*.e2e-spec.ts` under `server/`:
 
 - `server/test/scoring.spec.ts`: 13 deterministic scoring/type/palette tests.
 - `server/test/hidden-profile-v2.spec.ts`: 35 focused tests for 7D local normalization, strict structural null/zero semantics, all-zero completeness, no-evidence handling, unweighted global aggregation, finite bounds, contract identifiers, fixed wing palette shape, version separation, and legacy-route rejection of v2 SOLVE/SENSE payloads.
+- `server/test/starprint-v2-flow.spec.ts`: 14 comprehensive tests verifying all 5 v2 game scorers (SOLVE, SENSE, SPRINT, SUPPORT, SYNC), 7D profile aggregation, 5-archetype classification with ties and zero-norm template distance, and OKLCH 5-wing palette with similar color guards.
 - `server/test/app.e2e-spec.ts`: 11 STARPRINT full-lifecycle tests.
 - `server/test/activities.e2e-spec.ts`: 17 tests covering News listing/slug/draft exclusion, Event listing/slug/status derivation, Event Registration (success, normalization, duplicate prevention, cross-event registration, disabled/expired rejection, capacity lock, invalid payloads), and Contact submission.
-- **Total automated test cases: 76 across 4 suites (all passing).**
+- **Total automated test cases: 90 across 5 suites (all passing).**
 
 Required repository checks:
 
@@ -335,18 +344,16 @@ npm test
 
 ## 10. Confirmations and technical debt
 
-### TODO GAME DESIGN CONFIRMATION / NEXT CODEX TASK
+### COMPLETED: STARPRINT V2 MIGRATION
 
-The upcoming mini-game specification is documented in `Main question for building minigame in 5SS web`. Checkpoint 1 established official terminology, versioning, typed contracts, and the standalone 7D Local/Global Profile engine. The remaining migration work is:
-
-1. **Game integration:** Replace legacy 5D scorers with authoritative per-game v2 contribution/max-opportunity scorers and persist their Local Trait Profiles.
-2. **Star Types:** Implement and integrate cosine classification for the official `STRATEGIST`, `SPARK`, `SYNERGIST`, `SEEKER`, and `SUSTAINER` contracts after the zero-vector/tie policy is finalized.
-3. **SOLVE:** Update logic/speed question bank and trait contribution vectors.
-4. **SENSE:** Update 3 scenario decision matrices for 7-trait vector contributions.
-5. **SPRINT:** Rebuild as a finite 3-lane runner (Left / Right / Jump), 15–18s track length, 20s hard cap, max 2 attempts.
-6. **SUPPORT:** Rebuild as Cut-the-Rope physics/puzzle game with 3 predefined puzzles (10s per puzzle), tap/click rope, and auto-reset after invalid state.
-7. **SYNC:** Rebuild as Memory + Semantic Matching game with 20 cards / 10 pairs (4×5 grid, 30s timer).
-8. **Generation/persistence:** Integrate the v2 profile engine, OKLCH palette, official effects, Result/Public Star ID/download, and additive database version/profile fields without fake 5D-to-7D backfills.
+The official STARPRINT v2 specification has been fully implemented across both client and server:
+1. **Scoring Engine:** 5 per-game scorers (`solve.scorer.ts`, `sense.scorer.ts`, `sprint.scorer.ts`, `support.scorer.ts`, `sync.scorer.ts`) emitting Local Trait Profiles with strict null vs 0 semantics.
+2. **7D Hidden Profile:** Unweighted aggregation producing canonical 7D profiles (`hidden-profile.engine.ts`).
+3. **Classification:** Cosine classifier with Euclidean and priority tiebreaking and zero-norm template fallback (`type-engine-v2.ts`).
+4. **OKLCH Palette:** Deterministic 5-wing palette with projection offsets, gamut guards, and $\Delta E_{OK} < 0.06$ similar color guard (`palette-engine-v2.ts`).
+5. **Gameplay:** 5 interactive mini-games: SOLVE (5 options A–E, 6s), SENSE (3 scenarios, 5 options A–E, 10s), SPRINT (finite 3-lane runner, max 2 attempts), SUPPORT (deterministic 3-puzzle Cut-the-Rope), SYNC (20 cards / 10 pairs semantic matching, 30s timer).
+6. **Result Page & Public Identity:** Unique short `publicStarId` (`STAR-XXXXXXXX`), route `/star/:id`, high-resolution PNG & SVG image download, link copying, and idempotent publication to 5SS Sky.
+7. **Database Migration:** Additive TypeORM migration `1760000000000-AddStarprintV2Fields.ts` preserving legacy data without destructive drops.
 
 ### TODO BUSINESS CONFIRMATION
 

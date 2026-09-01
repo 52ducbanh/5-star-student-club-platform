@@ -1,144 +1,358 @@
-﻿import { useRef, useEffect, useCallback, useState } from "react"
-import { useStarprintStore } from "../../store/useStarprintStore"
-import { submitGameWithReconciliation } from "../../services/gameSubmission"
-import type { SprintRawResult } from "../../types/game.types"
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useStarprintStore } from '../../store/useStarprintStore'
+import { submitGameWithReconciliation } from '../../services/gameSubmission'
+import { SPRINT_TRACKS, type SprintLane, type ClientTrackDefinition } from './sprint-tracks'
+import { STARPRINT_VERSIONS } from '@5ss/contracts'
+import type { SprintEventV2, SprintAttemptV2, SprintRawResultV2 } from '@5ss/contracts'
 
-const GAME_DURATION_MS = 20000
-const GROUND_Y = 200
-const PLAYER_X = 80
-const PLAYER_SIZE = 32
-const GRAVITY = 0.6
-const JUMP_FORCE = -14
-const OBSTACLE_SPEED = 4
-const COLLECTIBLE_SPEED = 3
-
-interface GameObject { x: number; y: number; width: number; height: number; counted?: boolean }
-interface GameState {
-  running: boolean; startTime: number; playerY: number; playerVY: number; onGround: boolean
-  obstacles: GameObject[]; collectibles: GameObject[]
-  obstaclesEncountered: number; obstaclesAvoided: number; collisions: number
-  collectiblesAvailable: number; collectiblesCollected: number; jumpCount: number
-  lastObstacle: number; lastCollectible: number; rafId: number
-}
+type GamePhase = 'TUTORIAL' | 'RUNNING' | 'ATTEMPT_END' | 'SUBMITTING'
 
 export function SprintGame() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const stateRef = useRef<GameState>({
-    running: false, startTime: 0, playerY: GROUND_Y - PLAYER_SIZE, playerVY: 0, onGround: true,
-    obstacles: [], collectibles: [], obstaclesEncountered: 0, obstaclesAvoided: 0, collisions: 0,
-    collectiblesAvailable: 0, collectiblesCollected: 0, jumpCount: 0, lastObstacle: 0, lastCollectible: 0, rafId: 0,
-  })
-  const [submitting, setSubmitting] = useState(false)
-  const [isFinished, setIsFinished] = useState(false)
+  const [phase, setPhase] = useState<GamePhase>('TUTORIAL')
+  const [attemptNumber, setAttemptNumber] = useState<1 | 2>(1)
+  const [lane, setLane] = useState<SprintLane>(1)
+  const [isJumping, setIsJumping] = useState(false)
+  const [isStumbling, setIsStumbling] = useState(false)
+  const [starsCount, setStarsCount] = useState(0)
+  const [progress, setProgress] = useState(0)
+  const [tutorialCountdown, setTutorialCountdown] = useState(3)
   const [error, setError] = useState<string | null>(null)
-  const [countdown, setCountdown] = useState(GAME_DURATION_MS / 1000)
-  const finalResultRef = useRef<SprintRawResult | null>(null)
+
+  // Track selection: deterministic choice based on sessionId, or fallback to Track A
   const { sessionId, setStep, markGameCompleted, addGameResult } = useStarprintStore()
-
-  const submitFinal = useCallback(async (rawResult: SprintRawResult) => {
-    if (!sessionId) return
-    setSubmitting(true)
-    setError(null)
-    finalResultRef.current = rawResult
-
-    const res = await submitGameWithReconciliation({
-      sessionId,
-      gameId: "sprint",
-      rawResult,
-      nextStep: "SUPPORT",
-      markGameCompleted,
-      addGameResult,
-      setStep,
-    })
-
-    if (!res.success) {
-      setError(res.error || "Lỗi gửi kết quả. Thử lại?")
-    }
-    setSubmitting(false)
-  }, [sessionId, markGameCompleted, addGameResult, setStep])
-
-  const jump = useCallback(() => {
-    const s = stateRef.current
-    if (s.onGround && s.running) { s.playerVY = JUMP_FORCE; s.onGround = false; s.jumpCount++ }
-  }, [])
+  const trackRef = useRef<ClientTrackDefinition>(SPRINT_TRACKS[0])
 
   useEffect(() => {
-    const canvas = canvasRef.current; if (!canvas) return
-    const ctx = canvas.getContext("2d"); if (!ctx) return
-    const s = stateRef.current
-    Object.assign(s, {
-      running: true, startTime: Date.now(), playerY: GROUND_Y - PLAYER_SIZE, playerVY: 0, onGround: true,
-      obstacles: [], collectibles: [], obstaclesEncountered: 0, obstaclesAvoided: 0, collisions: 0,
-      collectiblesAvailable: 0, collectiblesCollected: 0, jumpCount: 0, lastObstacle: 0, lastCollectible: 0,
-    })
-    const handleKey = (e: KeyboardEvent) => { if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); jump() } }
-    window.addEventListener("keydown", handleKey)
-    const countdownInterval = setInterval(() => {
-      const elapsed = Date.now() - s.startTime
-      setCountdown(Math.ceil(Math.max(0, GAME_DURATION_MS - elapsed) / 1000))
-    }, 200)
-    function drawStar(c: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
-      c.beginPath()
-      for (let i = 0; i < 5; i++) {
-        const a = (i * 4 * Math.PI) / 5 - Math.PI / 2; const ia = ((i * 4 + 2) * Math.PI) / 5 - Math.PI / 2
-        if (i === 0) c.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a)); else c.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
-        c.lineTo(cx + r * 0.42 * Math.cos(ia), cy + r * 0.42 * Math.sin(ia))
-      }; c.closePath()
+    if (sessionId) {
+      // Pick stable track from sessionId
+      const charCode = sessionId.charCodeAt(0) || 0
+      trackRef.current = SPRINT_TRACKS[charCode % SPRINT_TRACKS.length]
     }
-    function loop() {
-      if (!s.running) return
-      const elapsed = Date.now() - s.startTime
-      if (elapsed >= GAME_DURATION_MS) {
-        s.running = false
-        cancelAnimationFrame(s.rafId)
-        clearInterval(countdownInterval)
-        setIsFinished(true)
-        const rawResult: SprintRawResult = {
-          gameId: "sprint", durationMs: GAME_DURATION_MS,
-          obstaclesEncountered: s.obstaclesEncountered, obstaclesAvoided: s.obstaclesAvoided,
-          collisions: s.collisions, collectiblesAvailable: s.collectiblesAvailable,
-          collectiblesCollected: s.collectiblesCollected, jumpCount: s.jumpCount,
+  }, [sessionId])
+
+  const gameStartRef = useRef(Date.now())
+  const attemptStartRef = useRef(Date.now())
+  const laneRef = useRef<SprintLane>(1)
+  const isJumpingRef = useRef(false)
+  const eventsRef = useRef<SprintEventV2[]>([])
+  const attemptsRef = useRef<SprintAttemptV2[]>([])
+  const collidedObstaclesRef = useRef<Set<string>>(new Set())
+  const processedEventsRef = useRef<Set<string>>(new Set())
+  const animFrameRef = useRef<number | null>(null)
+  const finalResultRef = useRef<SprintRawResultV2 | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  // Sync state with refs for event loop
+  useEffect(() => {
+    laneRef.current = lane
+  }, [lane])
+
+  useEffect(() => {
+    isJumpingRef.current = isJumping
+  }, [isJumping])
+
+  // Tutorial timer
+  useEffect(() => {
+    if (phase !== 'TUTORIAL') return
+    const interval = setInterval(() => {
+      setTutorialCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setPhase('RUNNING')
+          attemptStartRef.current = Date.now()
+          return 0
         }
-        void submitFinal(rawResult)
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [phase])
+
+  // Action handlers
+  const moveLeft = useCallback(() => {
+    if (phase !== 'RUNNING') return
+    setLane((prev) => {
+      if (prev > 0) {
+        const next = (prev - 1) as SprintLane
+        eventsRef.current.push({
+          type: 'action',
+          atMs: Date.now() - attemptStartRef.current,
+          action: 'move-left',
+          fromLane: prev,
+          toLane: next,
+        })
+        return next
+      }
+      return prev
+    })
+  }, [phase])
+
+  const moveRight = useCallback(() => {
+    if (phase !== 'RUNNING') return
+    setLane((prev) => {
+      if (prev < 2) {
+        const next = (prev + 1) as SprintLane
+        eventsRef.current.push({
+          type: 'action',
+          atMs: Date.now() - attemptStartRef.current,
+          action: 'move-right',
+          fromLane: prev,
+          toLane: next,
+        })
+        return next
+      }
+      return prev
+    })
+  }, [phase])
+
+  const jump = useCallback(() => {
+    if (phase !== 'RUNNING' || isJumpingRef.current) return
+    setIsJumping(true)
+    eventsRef.current.push({
+      type: 'action',
+      atMs: Date.now() - attemptStartRef.current,
+      action: 'jump',
+      fromLane: laneRef.current,
+      toLane: laneRef.current,
+    })
+    setTimeout(() => {
+      setIsJumping(false)
+    }, 550)
+  }, [phase])
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault()
+        moveLeft()
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault()
+        moveRight()
+      } else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        e.preventDefault()
+        jump()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [moveLeft, moveRight, jump])
+
+  // Mobile Touch controls
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - touchStartRef.current.x
+    const dy = touch.clientY - touchStartRef.current.y
+    touchStartRef.current = null
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+      if (dx < 0) moveLeft()
+      else moveRight()
+    } else if (dy < -30) {
+      jump()
+    } else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+      jump()
+    }
+  }
+
+  const submitFinal = useCallback(
+    async (rawResult: SprintRawResultV2) => {
+      if (!sessionId) return
+      setPhase('SUBMITTING')
+      setError(null)
+      finalResultRef.current = rawResult
+
+      const res = await submitGameWithReconciliation({
+        sessionId,
+        gameId: 'sprint',
+        rawResult,
+        nextStep: 'SUPPORT',
+        markGameCompleted,
+        addGameResult,
+        setStep,
+      })
+
+      if (!res.success) {
+        setError(res.error || 'Lỗi kết nối khi gửi kết quả. Vui lòng bấm thử lại.')
+        setPhase('ATTEMPT_END')
+      }
+    },
+    [sessionId, markGameCompleted, addGameResult, setStep],
+  )
+
+  const endAttempt = useCallback((completed: boolean) => {
+    const elapsed = Math.min(Date.now() - attemptStartRef.current, trackRef.current.hardCapMs)
+    const attemptRecord: SprintAttemptV2 = {
+      attemptNumber,
+      completed,
+      durationMs: elapsed,
+      events: [...eventsRef.current],
+    }
+
+    const updatedAttempts = [...attemptsRef.current, attemptRecord]
+    attemptsRef.current = updatedAttempts
+
+    if (attemptNumber === 1) {
+      setPhase('ATTEMPT_END')
+    } else {
+      // 2nd attempt completed -> finish game
+      const rawResult: SprintRawResultV2 = {
+        gameId: 'sprint',
+        payloadVersion: STARPRINT_VERSIONS.officialV2.rawPayload,
+        contentVersion: STARPRINT_VERSIONS.officialV2.content,
+        startedAtMs: gameStartRef.current,
+        completedAtMs: Date.now(),
+        trackId: trackRef.current.trackId,
+        attempts: updatedAttempts,
+      }
+      void submitFinal(rawResult)
+    }
+  }, [attemptNumber, submitFinal])
+
+  // Game Loop
+  useEffect(() => {
+    if (phase !== 'RUNNING') return
+
+    const track = trackRef.current
+    let running = true
+
+    const loop = () => {
+      if (!running) return
+      const elapsed = Date.now() - attemptStartRef.current
+      const currentProgress = Math.min(elapsed / track.expectedDurationMs, 1)
+      setProgress(currentProgress)
+
+      // Process track events
+      for (const event of track.events) {
+        if (processedEventsRef.current.has(event.id)) continue
+
+        // Check if event time has arrived
+        if (elapsed >= event.atMs - 100 && elapsed <= event.atMs + 400) {
+          const currentLane = laneRef.current
+          const jumping = isJumpingRef.current
+
+          if (event.type === 'collectible-star') {
+            if (currentLane === event.lane) {
+              processedEventsRef.current.add(event.id)
+              eventsRef.current.push({
+                type: 'collectible-collected',
+                atMs: elapsed,
+                collectibleId: event.id,
+              })
+              setStarsCount((prev) => prev + 1)
+            } else if (elapsed > event.atMs + 200) {
+              processedEventsRef.current.add(event.id)
+            }
+          } else if (event.type === 'obstacle-blocker') {
+            if (currentLane === event.lane) {
+              // Collision!
+              if (!collidedObstaclesRef.current.has(event.id)) {
+                collidedObstaclesRef.current.add(event.id)
+                processedEventsRef.current.add(event.id)
+                eventsRef.current.push({
+                  type: 'collision',
+                  atMs: elapsed,
+                  obstacleId: event.id,
+                })
+                setIsStumbling(true)
+                setTimeout(() => setIsStumbling(false), 600)
+              }
+            } else {
+              // Successfully avoided
+              processedEventsRef.current.add(event.id)
+              eventsRef.current.push({
+                type: 'obstacle-cleared',
+                atMs: elapsed,
+                obstacleId: event.id,
+              })
+            }
+          } else if (event.type === 'obstacle-barrier') {
+            if (currentLane === event.lane) {
+              if (jumping) {
+                // Successfully jumped over barrier!
+                processedEventsRef.current.add(event.id)
+                eventsRef.current.push({
+                  type: 'obstacle-cleared',
+                  atMs: elapsed,
+                  obstacleId: event.id,
+                })
+              } else if (!collidedObstaclesRef.current.has(event.id)) {
+                // Collided with barrier!
+                collidedObstaclesRef.current.add(event.id)
+                processedEventsRef.current.add(event.id)
+                eventsRef.current.push({
+                  type: 'collision',
+                  atMs: elapsed,
+                  obstacleId: event.id,
+                })
+                setIsStumbling(true)
+                setTimeout(() => setIsStumbling(false), 600)
+              }
+            } else {
+              // In another lane -> avoided
+              processedEventsRef.current.add(event.id)
+              eventsRef.current.push({
+                type: 'obstacle-cleared',
+                atMs: elapsed,
+                obstacleId: event.id,
+              })
+            }
+          }
+        }
+      }
+
+      // Check track finish
+      if (elapsed >= track.expectedDurationMs || elapsed >= track.hardCapMs) {
+        running = false
+        endAttempt(true)
         return
       }
-      const W = canvas!.width; const H = canvas!.height
-      ctx!.clearRect(0, 0, W, H)
-      const bg = ctx!.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#0b234d"); bg.addColorStop(1, "#091a38")
-      ctx!.fillStyle = bg; ctx!.fillRect(0, 0, W, H)
-      ctx!.fillStyle = "rgba(255,255,255,0.3)"
-      for (let i = 0; i < 15; i++) ctx!.fillRect(((i * 137 + elapsed * 0.02) % W), (i * 47) % (GROUND_Y - 20), 1, 1)
-      ctx!.fillStyle = "#1a4080"; ctx!.fillRect(0, GROUND_Y + PLAYER_SIZE - 4, W, H)
-      s.playerVY += GRAVITY; s.playerY += s.playerVY
-      if (s.playerY >= GROUND_Y - PLAYER_SIZE) { s.playerY = GROUND_Y - PLAYER_SIZE; s.playerVY = 0; s.onGround = true }
-      ctx!.save(); ctx!.shadowBlur = 16; ctx!.shadowColor = "#ffd467"; ctx!.fillStyle = "#ffd467"
-      drawStar(ctx!, PLAYER_X, s.playerY + PLAYER_SIZE / 2, PLAYER_SIZE / 2); ctx!.fill(); ctx!.restore()
-      if (elapsed - s.lastObstacle > 1400 + Math.random() * 900) { s.obstacles.push({ x: W, y: GROUND_Y - 36, width: 22, height: 36, counted: false }); s.obstaclesEncountered++; s.lastObstacle = elapsed }
-      if (elapsed - s.lastCollectible > 1800 + Math.random() * 1200) { s.collectibles.push({ x: W + 40, y: GROUND_Y - 72, width: 16, height: 16 }); s.collectiblesAvailable++; s.lastCollectible = elapsed }
-      const pL = PLAYER_X - PLAYER_SIZE / 2 + 6; const pR = PLAYER_X + PLAYER_SIZE / 2 - 6
-      const pT = s.playerY + 4; const pB = s.playerY + PLAYER_SIZE - 4
-      s.obstacles = s.obstacles.filter((ob) => {
-        ob.x -= OBSTACLE_SPEED
-        const hit = ob.x < pR && ob.x + ob.width > pL && ob.y < pB && ob.y + ob.height > pT
-        if (hit) { s.collisions++; ctx!.fillStyle = "#ff6584"; ctx!.shadowBlur = 10; ctx!.shadowColor = "#ff6584" }
-        else { if (!ob.counted && ob.x + ob.width < PLAYER_X - PLAYER_SIZE / 2) { s.obstaclesAvoided++; ob.counted = true }; ctx!.fillStyle = "#9a7bef"; ctx!.shadowBlur = 0 }
-        ctx!.fillRect(ob.x, ob.y, ob.width, ob.height); ctx!.shadowBlur = 0; return ob.x > -ob.width
-      })
-      s.collectibles = s.collectibles.filter((col) => {
-        col.x -= COLLECTIBLE_SPEED
-        const collected = col.x < pR && col.x + col.width > pL && col.y < pB && col.y + col.height > pT
-        if (collected) { s.collectiblesCollected++; return false }
-        ctx!.save(); ctx!.fillStyle = "#6cd5f7"; ctx!.shadowBlur = 10; ctx!.shadowColor = "#6cd5f7"
-        ctx!.beginPath(); ctx!.arc(col.x + 8, col.y + 8, 8, 0, Math.PI * 2); ctx!.fill(); ctx!.restore()
-        return col.x > -col.width
-      })
-      ctx!.fillStyle = "rgba(108,213,247,0.15)"; ctx!.fillRect(0, H - 4, W, 4)
-      ctx!.fillStyle = "#6cd5f7"; ctx!.fillRect(0, H - 4, W * (elapsed / GAME_DURATION_MS), 4)
-      s.rafId = requestAnimationFrame(loop)
+
+      animFrameRef.current = requestAnimationFrame(loop)
     }
-    s.rafId = requestAnimationFrame(loop)
-    return () => { s.running = false; cancelAnimationFrame(s.rafId); clearInterval(countdownInterval); window.removeEventListener("keydown", handleKey) }
-  }, [jump, submitFinal])
+
+    animFrameRef.current = requestAnimationFrame(loop)
+
+    return () => {
+      running = false
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    }
+  }, [phase, endAttempt])
+
+  const startRetry = () => {
+    // Exact same track, fresh attempt
+    setAttemptNumber(2)
+    setLane(1)
+    laneRef.current = 1
+    setIsJumping(false)
+    setIsStumbling(false)
+    setStarsCount(0)
+    setProgress(0)
+    eventsRef.current = []
+    collidedObstaclesRef.current = new Set()
+    processedEventsRef.current = new Set()
+    attemptStartRef.current = Date.now()
+    setPhase('RUNNING')
+  }
+
+  const acceptFirstAttempt = () => {
+    const rawResult: SprintRawResultV2 = {
+      gameId: 'sprint',
+      payloadVersion: STARPRINT_VERSIONS.officialV2.rawPayload,
+      contentVersion: STARPRINT_VERSIONS.officialV2.content,
+      startedAtMs: gameStartRef.current,
+      completedAtMs: Date.now(),
+      trackId: trackRef.current.trackId,
+      attempts: attemptsRef.current,
+    }
+    void submitFinal(rawResult)
+  }
 
   const retrySubmit = () => {
     if (finalResultRef.current) {
@@ -146,19 +360,156 @@ export function SprintGame() {
     }
   }
 
+  const track = trackRef.current
+  const elapsed = phase === 'RUNNING' ? Date.now() - attemptStartRef.current : 0
+
   return (
-    <div className="game-step sprint-game">
-      <div className="game-progress">🏃 SPRINT · {countdown}s</div>
-      <p className="sprint-game__hint">Space/↑ hoặc chạm màn hình để nhảy!</p>
-      <canvas ref={canvasRef} width={480} height={260} className="sprint-game__canvas" onClick={jump}
-        style={{ cursor: isFinished ? "default" : "pointer", touchAction: "manipulation" }} aria-label="SPRINT game canvas" role="img" />
-      {error && (
-        <div className="game-error-box">
-          <p className="field-error" role="alert">{error}</p>
-          <button className="btn btn--primary" onClick={retrySubmit}>Thử gửi lại 🔄</button>
+    <div
+      className="game-step sprint-game"
+      role="region"
+      aria-label="Trò chơi SPRINT 3 làn chạy"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="game-progress" aria-live="polite">
+        <span className="game-progress__badge">🏃 SPRINT</span>
+        <span className="game-progress__step">Lượt chạy {attemptNumber}/2 · Đường chạy 3 làn</span>
+        <span className="game-progress__stars" aria-label={`Thu thập: ${starsCount} ngôi sao`}>
+          ⭐ {starsCount}
+        </span>
+      </div>
+
+      <div className="game-progress-bar" role="progressbar" aria-valuenow={progress * 100} aria-valuemin={0} aria-valuemax={100}>
+        <div className="game-progress-bar__fill" style={{ width: `${progress * 100}%` }} />
+      </div>
+
+      {phase === 'TUTORIAL' && (
+        <div className="sprint-tutorial-overlay" role="dialog" aria-modal="true" aria-label="Hướng dẫn chơi SPRINT">
+          <h3>Sẵn sàng xuất phát!</h3>
+          <p>
+            🎮 <strong>Phím mũi tên / A D</strong>: Chuyển làn trái - phải<br />
+            🚀 <strong>Phím Space / W</strong>: Nhảy qua chướng ngại vật thấp<br />
+            📱 <strong>Trên điện thoại</strong>: Vuốt trái/phải để đổi làn, chạm hoặc vuốt lên để nhảy
+          </p>
+          <div className="sprint-tutorial-countdown" aria-live="assertive">
+            Bắt đầu sau: <span>{tutorialCountdown}</span>
+          </div>
         </div>
       )}
-      {submitting && <p>Đang ghi nhận kết quả...</p>}
+
+      {/* 3-Lane Track Simulation View */}
+      <div className="sprint-stage">
+        <div className="sprint-lanes">
+          <div className={`sprint-lane ${lane === 0 ? 'lane--active' : ''}`}>
+            <span className="lane-label">Trái</span>
+          </div>
+          <div className={`sprint-lane ${lane === 1 ? 'lane--active' : ''}`}>
+            <span className="lane-label">Giữa</span>
+          </div>
+          <div className={`sprint-lane ${lane === 2 ? 'lane--active' : ''}`}>
+            <span className="lane-label">Phải</span>
+          </div>
+        </div>
+
+        {/* Dynamic Obstacles & Collectibles preview */}
+        <div className="sprint-elements-layer">
+          {phase === 'RUNNING' &&
+            track.events.map((e) => {
+              const timeToPlayer = e.atMs - elapsed
+              // Show elements approaching in the 2.5s window
+              if (timeToPlayer < -200 || timeToPlayer > 2500) return null
+              const topPercent = Math.max(0, Math.min(100, 100 - (timeToPlayer / 2500) * 100))
+              const leftPercent = e.lane === 0 ? 16.6 : e.lane === 1 ? 50 : 83.3
+
+              return (
+                <div
+                  key={e.id}
+                  className={`sprint-entity entity--${e.type} ${collidedObstaclesRef.current.has(e.id) ? 'entity--hit' : ''}`}
+                  style={{
+                    top: `${topPercent}%`,
+                    left: `${leftPercent}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                  aria-hidden="true"
+                >
+                  {e.type === 'collectible-star' ? '⭐' : e.type === 'obstacle-barrier' ? '🚧' : '🛑'}
+                </div>
+              )
+            })}
+
+          {/* Player Avatar */}
+          <div
+            className={`sprint-player ${isJumping ? 'player--jumping' : ''} ${isStumbling ? 'player--stumble' : ''}`}
+            style={{
+              left: lane === 0 ? '16.6%' : lane === 1 ? '50%' : '83.3%',
+              transform: 'translate(-50%, -50%)',
+            }}
+            aria-label={`Người chơi đang ở làn ${lane === 0 ? 'Trái' : lane === 1 ? 'Giữa' : 'Phải'}`}
+          >
+            <div className="sprint-player__icon">⚡</div>
+          </div>
+        </div>
+
+        {/* On-screen control buttons for mobile / touch */}
+        <div className="sprint-touch-controls" role="group" aria-label="Điều khiển cảm ứng">
+          <button
+            type="button"
+            className="btn btn--outline touch-btn"
+            onClick={moveLeft}
+            disabled={phase !== 'RUNNING'}
+            aria-label="Sang trái"
+          >
+            ⬅️ Trái
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary touch-btn jump-btn"
+            onClick={jump}
+            disabled={phase !== 'RUNNING' || isJumping}
+            aria-label="Nhảy"
+          >
+            ⬆️ Nhảy
+          </button>
+          <button
+            type="button"
+            className="btn btn--outline touch-btn"
+            onClick={moveRight}
+            disabled={phase !== 'RUNNING'}
+            aria-label="Sang phải"
+          >
+            Phải ➡️
+          </button>
+        </div>
+      </div>
+
+      {phase === 'ATTEMPT_END' && (
+        <div className="sprint-attempt-modal" role="dialog" aria-modal="true" aria-label="Kết thúc lượt 1">
+          <h3>🏁 Lượt chạy 1 hoàn thành!</h3>
+          <p>
+            Bạn đã hoàn thành đường chạy với <strong>{starsCount}</strong> sao thu thập được.<br />
+            Bạn có thể thử lại lượt 2 trên <strong>cùng đường chạy</strong> để cải thiện thành tích, hoặc tiếp tục chặng tiếp theo.
+          </p>
+          <div className="sprint-attempt-actions">
+            <button type="button" className="btn btn--outline" onClick={startRetry}>
+              🔄 Thử lại lượt 2
+            </button>
+            <button type="button" className="btn btn--primary" onClick={acceptFirstAttempt}>
+              Tiếp tục 🚀
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="game-error-box" role="alert">
+          <p className="field-error">{error}</p>
+          <button type="button" className="btn btn--primary" onClick={retrySubmit}>
+            Thử gửi lại 🔄
+          </button>
+        </div>
+      )}
+
+      {phase === 'SUBMITTING' && <p className="game-submitting" aria-live="polite">Đang ghi nhận kết quả SPRINT...</p>}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GameResult, GameType } from './entities/game-result.entity';
@@ -9,7 +9,26 @@ import { DomainException } from '../../common/exceptions/domain.exception';
 import { DomainErrorCode } from '../../common/exceptions/domain-error.enum';
 import { ScoringService } from './scoring/scoring.service';
 import { validateRawGameResult } from './validation/raw-result-validator';
+import {
+  validateSolveRawResultV2,
+  validateSenseRawResultV2,
+  validateSprintRawResultV2,
+  validateSupportRawResultV2,
+  validateSyncRawResultV2,
+} from './validation/raw-result-validator-v2';
+import { computeV2LocalProfile } from './scoring/v2/v2-scoring.dispatcher';
+import { STARPRINT_VERSIONS } from '@5ss/contracts';
 import type { GameId, SubmitGameResponse } from '@5ss/contracts';
+
+const V2_PAYLOAD_VERSION = STARPRINT_VERSIONS.officialV2.rawPayload;
+
+function isV2Payload(rawResult: any): boolean {
+  return (
+    rawResult &&
+    typeof rawResult === 'object' &&
+    rawResult.payloadVersion === V2_PAYLOAD_VERSION
+  );
+}
 
 @Injectable()
 export class GamesService {
@@ -52,13 +71,39 @@ export class GamesService {
       throw new DomainException(DomainErrorCode.INVALID_GAME_STATE, 'Games must be played in strict order');
     }
 
-    // Authoritative Server-side Validation of Raw Result Payload
-    validateRawGameResult(typedGameId, submitDto.rawResult);
+    const { rawResult } = submitDto;
+    let localTraitProfile = null;
+
+    if (isV2Payload(rawResult)) {
+      // Official v2 path: strict validation + profile derivation
+      switch (typedGameId) {
+        case GameType.SOLVE:
+          validateSolveRawResultV2(rawResult as any);
+          break;
+        case GameType.SENSE:
+          validateSenseRawResultV2(rawResult as any);
+          break;
+        case GameType.SPRINT:
+          validateSprintRawResultV2(rawResult as any);
+          break;
+        case GameType.SUPPORT:
+          validateSupportRawResultV2(rawResult as any);
+          break;
+        case GameType.SYNC:
+          validateSyncRawResultV2(rawResult as any);
+          break;
+      }
+      localTraitProfile = computeV2LocalProfile(contractGameId, rawResult as any);
+    } else {
+      // Legacy v1 path: existing validator, no profile derivation
+      validateRawGameResult(typedGameId, rawResult);
+    }
 
     const result = this.resultRepository.create({
       sessionId,
       gameId: typedGameId,
-      rawResult: submitDto.rawResult,
+      rawResult,
+      localTraitProfile,
     });
 
     try {

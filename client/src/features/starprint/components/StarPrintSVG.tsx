@@ -1,10 +1,12 @@
-﻿import { motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { useReducedMotion } from 'motion/react'
 import { normalizeMediaUrl } from '@/shared/services/http/apiClient'
 
+import type { LegacyStarEffect, StarEffect, WingPalette } from '@5ss/contracts'
+
 interface Props {
-  palette: string[]
-  effect: 'flow' | 'shimmer' | 'spark' | 'orbit' | 'pulse'
+  palette: WingPalette | readonly string[] | string[]
+  effect: LegacyStarEffect | StarEffect
   photoUrl: string | null
   completedWings: number // 0-5
   size?: number
@@ -44,7 +46,7 @@ export function StarPrintSVG({ palette, effect, photoUrl, completedWings, size =
       width={size}
       height={size}
       xmlns="http://www.w3.org/2000/svg"
-      className={`starprint-svg effect-${effect}`}
+      className={`starprint-svg effect-${effect.toLowerCase()}`}
       role="img"
       aria-label="STARPRINT ngôi sao cá nhân"
     >

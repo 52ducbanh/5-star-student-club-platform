@@ -194,9 +194,9 @@ export interface GameRawResultMap {
 
 export type GameRawResult = GameRawResultMap[GameId];
 
-/** Current endpoint request. It stays explicitly legacy until route migration. */
+/** Endpoint request accepting either legacy v1 or official v2 payloads. */
 export interface SubmitGameRequest<
-  TRawResult extends LegacyGameRawResult = LegacyGameRawResult,
+  TRawResult extends LegacyGameRawResult | GameRawResult = LegacyGameRawResult | GameRawResult,
 > {
   rawResult: TRawResult;
 }

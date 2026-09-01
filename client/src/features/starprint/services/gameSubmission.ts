@@ -1,11 +1,11 @@
-﻿import { starprintApi } from './starprintApi'
-import type { LegacyGameRawResultMap } from '@5ss/contracts'
+import { starprintApi } from './starprintApi'
+import type { GameRawResultMap, LegacyGameRawResultMap } from '@5ss/contracts'
 import type { MiniGameResult, StarprintGameId, StarprintStep } from '../types/game.types'
 
 export interface SubmitAndReconcileOptions<TGameId extends StarprintGameId> {
   sessionId: string
   gameId: TGameId
-  rawResult: LegacyGameRawResultMap[TGameId]
+  rawResult: GameRawResultMap[TGameId] | LegacyGameRawResultMap[TGameId]
   nextStep: StarprintStep
   markGameCompleted: (gameId: StarprintGameId) => void
   addGameResult: (result: MiniGameResult<TGameId>) => void

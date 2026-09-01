@@ -37,7 +37,10 @@ export class SessionsService {
       throw new DomainException(DomainErrorCode.SESSION_NOT_FOUND, 'Session not found', 404);
     }
     
-    const results = await this.gameResultRepository.find({ where: { sessionId: id } });
+    const results = await this.gameResultRepository.find({
+      where: { sessionId: id },
+      order: { createdAt: 'ASC' },
+    });
     const completedGameIds = results.map(r => r.gameId as GameId);
 
     const starprint = await this.starprintRepository.findOne({ where: { sessionId: id } });

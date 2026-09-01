@@ -1,30 +1,31 @@
-﻿import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useStarprintStore } from '../../store/useStarprintStore'
 import { submitGameWithReconciliation } from '../../services/gameSubmission'
-import type { SolveRawResult } from '../../types/game.types'
+import { SOLVE_QUESTIONS_CLIENT } from './solve-questions'
+import { STARPRINT_VERSIONS } from '@5ss/contracts'
+import type { SolveAnswerV2, SolveRawResultV2 } from '@5ss/contracts'
 
-const QUESTIONS = [
-  { id: 'q1', question: 'Dãy số: 2, 4, 8, 16, ?', options: [{ id: 'a', text: '24' }, { id: 'b', text: '32' }, { id: 'c', text: '28' }, { id: 'd', text: '20' }] },
-  { id: 'q2', question: 'Số nào không thuộc nhóm: 3, 7, 11, 14, 19?', options: [{ id: 'a', text: '3' }, { id: 'b', text: '7' }, { id: 'c', text: '14' }, { id: 'd', text: '11' }] },
-  { id: 'q3', question: 'Nếu tất cả A là B, và tất cả B là C. Thì A là gì?', options: [{ id: 'a', text: 'Không phải C' }, { id: 'b', text: 'Có thể là C' }, { id: 'c', text: 'Luôn là C' }, { id: 'd', text: 'Chưa xác định' }] },
-  { id: 'q4', question: 'Mẫu dãy số: 1, 1, 2, 3, 5, 8, ?', options: [{ id: 'a', text: '11' }, { id: 'b', text: '12' }, { id: 'c', text: '13' }, { id: 'd', text: '16' }] },
-]
+const QUESTION_DURATION_S = 6
+const QUESTIONS = SOLVE_QUESTIONS_CLIENT
 
 export function SolveGame() {
   const [currentQ, setCurrentQ] = useState(0)
-  const [answers, setAnswers] = useState<SolveRawResult['answers']>([])
-  const [questionStart, setQuestionStart] = useState(() => Date.now())
-  const [gameStart] = useState(() => Date.now())
+  const [answers, setAnswers] = useState<SolveAnswerV2[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [timeLeft, setTimeLeft] = useState(6)
+  const [timeLeft, setTimeLeft] = useState(QUESTION_DURATION_S)
+
+  const questionStartRef = useRef(Date.now())
+  const gameStartRef = useRef(Date.now())
   const answeredRef = useRef(false)
-  const finalResultRef = useRef<SolveRawResult | null>(null)
+  const finalResultRef = useRef<SolveRawResultV2 | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const { sessionId, setStep, markGameCompleted, addGameResult } = useStarprintStore()
 
   const submitFinal = useCallback(
-    async (rawResult: SolveRawResult) => {
+    async (rawResult: SolveRawResultV2) => {
       if (!sessionId) return
       setSubmitting(true)
       setError(null)
@@ -41,7 +42,7 @@ export function SolveGame() {
       })
 
       if (!res.success) {
-        setError(res.error || 'Lỗi kết nối server. Vui lòng thử lại.')
+        setError(res.error || 'Lỗi kết nối máy chủ khi ghi nhận kết quả. Vui lòng bấm thử lại.')
         answeredRef.current = false
         setIsLocked(false)
       }
@@ -50,50 +51,80 @@ export function SolveGame() {
     [sessionId, markGameCompleted, addGameResult, setStep],
   )
 
-  const answerQuestion = useCallback(
-    async (optionId: string | null) => {
+  const recordAndAdvance = useCallback(
+    async (selectedOptionId: string | null, timedOut: boolean) => {
+      // Synchronously lock input to prevent double clicks
       if (answeredRef.current) return
       answeredRef.current = true
       setIsLocked(true)
 
-      const elapsed = Date.now() - questionStart
-      const newAnswers: SolveRawResult['answers'] = [
-        ...answers,
-        { questionId: QUESTIONS[currentQ].id, selectedOptionId: optionId, responseTimeMs: elapsed },
-      ]
+      const responseTimeMs = Math.min(Date.now() - questionStartRef.current, QUESTION_DURATION_S * 1000)
+      const currentQuestion = QUESTIONS[currentQ]
+      const answerRecord: SolveAnswerV2 = {
+        questionId: currentQuestion.id,
+        selectedOptionId,
+        responseTimeMs,
+        timedOut,
+      }
+
+      const nextAnswers = [...answers, answerRecord]
+      setAnswers(nextAnswers)
 
       if (currentQ < QUESTIONS.length - 1) {
-        setAnswers(newAnswers)
-        setCurrentQ((q) => q + 1)
-        setQuestionStart(Date.now())
-        setTimeLeft(6)
-        answeredRef.current = false
-        setIsLocked(false)
+        // Short clean transition (200ms) to prevent flickering, then next question
+        setTimeout(() => {
+          setCurrentQ((prev) => prev + 1)
+          setTimeLeft(QUESTION_DURATION_S)
+          questionStartRef.current = Date.now()
+          answeredRef.current = false
+          setIsLocked(false)
+        }, 150)
       } else {
-        const rawResult: SolveRawResult = {
+        // Last question completed -> submit raw evidence to server
+        const rawResult: SolveRawResultV2 = {
           gameId: 'solve',
-          answers: newAnswers,
-          totalDurationMs: Date.now() - gameStart,
+          payloadVersion: STARPRINT_VERSIONS.officialV2.rawPayload,
+          contentVersion: STARPRINT_VERSIONS.officialV2.content,
+          startedAtMs: gameStartRef.current,
+          completedAtMs: Date.now(),
+          answers: nextAnswers,
         }
         await submitFinal(rawResult)
       }
     },
-    [answers, currentQ, questionStart, gameStart, submitFinal],
+    [answers, currentQ, submitFinal],
   )
 
+  // Question timer
   useEffect(() => {
     if (submitting || isLocked) return
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [submitting, isLocked])
 
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [currentQ, submitting, isLocked])
+
+  // Handle timeout event
   useEffect(() => {
     if (timeLeft === 0 && !submitting && !answeredRef.current) {
-      void answerQuestion(null)
+      void recordAndAdvance(null, true)
     }
-  }, [timeLeft, submitting, answerQuestion])
+  }, [timeLeft, submitting, recordAndAdvance])
+
+  const handleOptionClick = (optionId: string) => {
+    if (isLocked || submitting || answeredRef.current) return
+    void recordAndAdvance(optionId, false)
+  }
 
   const retrySubmit = () => {
     if (finalResultRef.current) {
@@ -102,35 +133,52 @@ export function SolveGame() {
       setError(null)
       answeredRef.current = false
       setIsLocked(false)
-      void answerQuestion(null)
+      void recordAndAdvance(null, true)
     }
   }
 
   const q = QUESTIONS[currentQ]
 
   return (
-    <div className="game-step solve-game">
-      <div className="game-progress">⚡ SOLVE · Câu {currentQ + 1}/{QUESTIONS.length} · ⏱️ {timeLeft}s</div>
+    <div className="game-step solve-game" role="region" aria-label="Trò chơi SOLVE">
+      <div className="game-progress" aria-live="polite">
+        <span className="game-progress__badge">⚡ SOLVE</span>
+        <span className="game-progress__step">Câu {currentQ + 1}/{QUESTIONS.length} · {q.categoryLabel}</span>
+        <span className={`game-progress__timer ${timeLeft <= 2 ? 'timer--urgent' : ''}`} aria-label={`Thời gian còn lại: ${timeLeft} giây`}>
+          ⏱️ {timeLeft}s
+        </span>
+      </div>
+
+      <div className="game-progress-bar" role="progressbar" aria-valuenow={((currentQ + 1) / QUESTIONS.length) * 100} aria-valuemin={0} aria-valuemax={100}>
+        <div className="game-progress-bar__fill" style={{ width: `${((currentQ + 1) / QUESTIONS.length) * 100}%` }} />
+      </div>
+
       <h2 className="solve-game__question">{q.question}</h2>
-      <div className="solve-game__options">
+
+      <div className="solve-game__options" role="group" aria-label="Các lựa chọn câu trả lời">
         {q.options.map((opt) => (
           <button
             key={opt.id}
+            type="button"
             className="solve-game__option btn btn--outline"
-            onClick={() => answerQuestion(opt.id)}
+            onClick={() => handleOptionClick(opt.id)}
             disabled={submitting || isLocked}
           >
-            {opt.text}
+            <span className="solve-game__option-id">{opt.id}.</span> {opt.text}
           </button>
         ))}
       </div>
+
       {error && (
-        <div className="game-error-box">
-          <p className="field-error" role="alert">{error}</p>
-          <button className="btn btn--primary" onClick={retrySubmit}>Thử gửi lại 🔄</button>
+        <div className="game-error-box" role="alert">
+          <p className="field-error">{error}</p>
+          <button type="button" className="btn btn--primary" onClick={retrySubmit}>
+            Thử gửi lại 🔄
+          </button>
         </div>
       )}
-      {submitting && <p>Đang ghi nhận kết quả...</p>}
+
+      {submitting && <p className="game-submitting" aria-live="polite">Đang ghi nhận kết quả...</p>}
     </div>
   )
 }

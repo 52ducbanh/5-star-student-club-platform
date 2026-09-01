@@ -63,6 +63,7 @@ export type StarPalette = LegacyStarPalette;
 export interface StarprintType {
   id: string;
   name: string;
+  tagline?: string;
   description: string;
 }
 
@@ -92,8 +93,12 @@ export interface StarprintResponse {
   nickname: string;
   photoUrl: string | null;
   type: StarprintType;
-  effect: LegacyStarEffect;
-  palette: LegacyStarPalette;
+  effect: LegacyStarEffect | StarEffect;
+  palette: LegacyStarPalette | WingPalette;
+  wingPalette?: WingPalette | null;
   baseColor: string;
+  signatureColor?: string;
+  publicStarId?: string | null;
+  globalProfile7D?: GlobalHiddenProfile | null;
   isPublic: boolean;
 }

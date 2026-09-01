@@ -24,7 +24,10 @@ function GameRouteFallback({ label }: { label: string }) {
 export function AppRoutes() {
   const { isLoaded } = useLoading()
   const location = useLocation()
-  const isGameRoute = location.pathname.startsWith('/starprint') || location.pathname.startsWith('/sky')
+  const isGameRoute =
+    location.pathname.startsWith('/starprint') ||
+    location.pathname.startsWith('/sky') ||
+    location.pathname.startsWith('/star')
 
   return (
     <>
@@ -45,6 +48,14 @@ export function AppRoutes() {
             />
             <Route
               path="/starprint/result/:id"
+              element={
+                <Suspense fallback={<GameRouteFallback label="Đang tải kết quả..." />}>
+                  <StarprintResultPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/star/:id"
               element={
                 <Suspense fallback={<GameRouteFallback label="Đang tải kết quả..." />}>
                   <StarprintResultPage />
