@@ -9,6 +9,19 @@ export function validateRawGameResult(gameId: GameType, rawResult: any): void {
     throw new DomainException(DomainErrorCode.INVALID_GAME_RESULT, 'Game result payload must be a non-empty object');
   }
 
+  // The current endpoint is intentionally the unversioned legacy-v1 route.
+  // Fail closed so official-v2 evidence cannot be interpreted by legacy
+  // validators/scorers merely because some fields happen to overlap.
+  if (
+    Object.prototype.hasOwnProperty.call(rawResult, 'payloadVersion') ||
+    Object.prototype.hasOwnProperty.call(rawResult, 'contentVersion')
+  ) {
+    throw new DomainException(
+      DomainErrorCode.INVALID_GAME_RESULT,
+      'Versioned game results are not accepted by the legacy submission route',
+    );
+  }
+
   switch (gameId) {
     case GameType.SOLVE:
       validateSolveResult(rawResult);

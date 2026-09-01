@@ -55,6 +55,7 @@ Useful targeted commands:
 
 ```powershell
 npm --workspace @5ss/server test -- --runInBand test/scoring.spec.ts
+npm --workspace @5ss/server test -- --runInBand test/hidden-profile-v2.spec.ts
 npm --workspace @5ss/server test -- --runInBand test/app.e2e-spec.ts
 npm --workspace @5ss/server test -- --runInBand test/activities.e2e-spec.ts
 ```
@@ -72,6 +73,20 @@ npm --workspace @5ss/server test -- --runInBand test/activities.e2e-spec.ts
 - deterministic five-color palette generation.
 
 These tests lock the current demo implementation. They do not establish business approval or psychometric validity.
+
+### Official v2 profile foundation tests
+
+`server/test/hidden-profile-v2.spec.ts` contains 35 cases covering:
+
+- exact official trait, Star Type, effect, game-order, WingPalette, and version invariants;
+- Local Trait Profile normalization using the maximum valid observation opportunities actually presented;
+- mandatory seven-trait observability declarations, structural null, timeout/incorrect numeric zero, lower/upper clamping, invalid denominator, NaN, and Infinity;
+- unweighted Global Hidden Profile means with null excluded and numeric zero included;
+- all-zero observed profiles remaining complete, with explicit insufficient-evidence only when a trait has no observing source;
+- rejection of official-v2 SOLVE/SENSE payloads at the unversioned legacy submission validator;
+- finite `[0,1]` output validation.
+
+This engine is a standalone v2 foundation. The five current mini-games and legacy result generation still use `server/test/scoring.spec.ts` behavior until their later migration checkpoints.
 
 ### STARPRINT full-lifecycle tests
 
@@ -98,7 +113,7 @@ These tests lock the current demo implementation. They do not establish business
 - Event Registration: successful creation, trimmed studentId and normalized lowercase email, 409 `DUPLICATE_REGISTRATION` for duplicate studentId on same event, cross-event registration allowed, 422 for disabled/passed deadline, 422 `EVENT_FULL` for capacity overflow, 404 for unknown event, 400 for invalid payload.
 - Contact: valid submission persisted in `contact_submissions`, 400 for invalid payload.
 
-**Total current automated Jest cases: 41.**
+**Total current automated Jest cases: 76 across 4 suites.**
 
 ## Manual client smoke checklist
 

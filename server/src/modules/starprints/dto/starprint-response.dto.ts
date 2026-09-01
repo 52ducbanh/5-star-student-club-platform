@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type {
-  StarEffect,
-  StarPalette,
+  LegacyStarEffect,
+  LegacyStarPalette,
   StarprintResponse,
   StarprintType,
 } from '@5ss/contracts';
@@ -34,10 +34,10 @@ export class StarprintResponseDto implements StarprintResponse {
   type: StarprintTypeDto;
 
   @ApiProperty()
-  effect: StarEffect;
+  effect: LegacyStarEffect;
 
   @ApiProperty({ type: [String] })
-  palette: StarPalette;
+  palette: LegacyStarPalette;
 
   @ApiProperty()
   baseColor: string;

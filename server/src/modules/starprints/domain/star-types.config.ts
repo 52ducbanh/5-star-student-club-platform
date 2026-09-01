@@ -1,10 +1,10 @@
-import type { StarEffect } from '@5ss/contracts';
+import type { LegacyStarEffect, LegacyStarTypeId } from '@5ss/contracts';
 
 export interface StarTypeDefinition {
-  id: string;
+  id: LegacyStarTypeId;
   name: string;
   description: string;
-  effect: StarEffect;
+  effect: LegacyStarEffect;
   dominant: 'focus' | 'explore' | 'energy' | 'social' | 'adapt';
 }
 

@@ -1,11 +1,11 @@
-import type { StarEffect, StarPalette } from "../starprints";
+import type { LegacyStarEffect, LegacyStarPalette } from "../starprints";
 
 export interface SkyStar {
   id: string;
   baseColor: string;
-  palette: StarPalette;
+  palette: LegacyStarPalette;
   type: string;
-  effect: StarEffect;
+  effect: LegacyStarEffect;
   nickname: string | null;
   photoUrl: string | null;
   createdAt: string;

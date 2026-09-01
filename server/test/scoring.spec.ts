@@ -93,11 +93,11 @@ describe('STARPRINT Domain Engines', () => {
 
     it('should aggregate profiles from 5 games into a bounded 0-100 vector', () => {
       const results: GameResult[] = [
-        { id: '1', sessionId: 's1', gameId: GameType.SOLVE, rawResult: { answers: [{ questionId: 'q1', selectedOptionId: 'b' }, { questionId: 'q2', selectedOptionId: 'c' }, { questionId: 'q3', selectedOptionId: 'c' }, { questionId: 'q4', selectedOptionId: 'c' }], totalDurationMs: 8000 }, createdAt: new Date(), session: null as any },
-        { id: '2', sessionId: 's1', gameId: GameType.SENSE, rawResult: { decisions: [{ scenarioId: 's1', optionId: 'a' }, { scenarioId: 's2', optionId: 'b' }, { scenarioId: 's3', optionId: 'a' }] }, createdAt: new Date(), session: null as any },
-        { id: '3', sessionId: 's1', gameId: GameType.SPRINT, rawResult: { durationMs: 20000, obstaclesEncountered: 10, obstaclesAvoided: 9, collisions: 1, collectiblesAvailable: 10, collectiblesCollected: 8, jumpCount: 12 }, createdAt: new Date(), session: null as any },
-        { id: '4', sessionId: 's1', gameId: GameType.SUPPORT, rawResult: { completed: true, rotations: 5, elapsedMs: 9000 }, createdAt: new Date(), session: null as any },
-        { id: '5', sessionId: 's1', gameId: GameType.SYNC, rawResult: { pairsTotal: 4, pairsMatched: 4, mismatches: 0, flips: 8, elapsedMs: 8000, completed: true }, createdAt: new Date(), session: null as any },
+        { id: '1', sessionId: 's1', gameId: GameType.SOLVE, rawResult: { gameId: 'solve', answers: [{ questionId: 'q1', selectedOptionId: 'b', responseTimeMs: 1500 }, { questionId: 'q2', selectedOptionId: 'c', responseTimeMs: 1500 }, { questionId: 'q3', selectedOptionId: 'c', responseTimeMs: 1500 }, { questionId: 'q4', selectedOptionId: 'c', responseTimeMs: 1500 }], totalDurationMs: 8000 }, createdAt: new Date(), session: null as any },
+        { id: '2', sessionId: 's1', gameId: GameType.SENSE, rawResult: { gameId: 'sense', decisions: [{ scenarioId: 's1', optionId: 'a', responseTimeMs: 2500 }, { scenarioId: 's2', optionId: 'b', responseTimeMs: 2500 }, { scenarioId: 's3', optionId: 'a', responseTimeMs: 2500 }], totalDurationMs: 7500 }, createdAt: new Date(), session: null as any },
+        { id: '3', sessionId: 's1', gameId: GameType.SPRINT, rawResult: { gameId: 'sprint', durationMs: 20000, obstaclesEncountered: 10, obstaclesAvoided: 9, collisions: 1, collectiblesAvailable: 10, collectiblesCollected: 8, jumpCount: 12 }, createdAt: new Date(), session: null as any },
+        { id: '4', sessionId: 's1', gameId: GameType.SUPPORT, rawResult: { gameId: 'support', completed: true, rotations: 5, elapsedMs: 9000 }, createdAt: new Date(), session: null as any },
+        { id: '5', sessionId: 's1', gameId: GameType.SYNC, rawResult: { gameId: 'sync', pairsTotal: 4, pairsMatched: 4, mismatches: 0, flips: 8, elapsedMs: 8000, completed: true }, createdAt: new Date(), session: null as any },
       ];
 
       const profile = scoringService.aggregateProfiles(results);

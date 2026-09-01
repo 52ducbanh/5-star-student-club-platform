@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, JoinColumn, OneToOne } from 'typeorm';
 import { PlayerSession } from '../../sessions/entities/player-session.entity';
-import type { StarEffect, StarPalette } from '@5ss/contracts';
+import type { LegacyStarEffect, LegacyStarPalette } from '@5ss/contracts';
 
 @Entity('starprints')
 export class Starprint {
@@ -18,13 +18,13 @@ export class Starprint {
   baseColor: string;
 
   @Column({ type: 'jsonb' })
-  palette: StarPalette;
+  palette: LegacyStarPalette;
 
   @Column({ type: 'varchar' })
   type: string;
 
   @Column({ type: 'varchar' })
-  effect: StarEffect;
+  effect: LegacyStarEffect;
 
   @Column({ type: 'jsonb' })
   profile: {

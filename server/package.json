@@ -58,8 +58,11 @@
                  "rootDir":  ".",
                  "testRegex":  ".*\\.(spec|e2e-spec)\\.ts$",
                  "transform":  {
-                                   "^.+\\.(t|j)s$":  "ts-jest"
+                                   "^.+\\.ts$":  "ts-jest"
                                },
+                 "moduleNameMapper":  {
+                                          "^@5ss/contracts$":  "<rootDir>/../packages/contracts/src/index.ts"
+                                      },
                  "collectCoverageFrom":  [
                                              "src/**/*.(t|j)s"
                                          ],

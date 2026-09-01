@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { StarPalette } from '@5ss/contracts';
+import type { LegacyStarPalette } from '@5ss/contracts';
 
 @Injectable()
 export class PaletteEngine {
-  generatePalette(hexColor: string): StarPalette {
+  generatePalette(hexColor: string): LegacyStarPalette {
     const hsl = this.hexToHsl(hexColor);
     
     const variations = [

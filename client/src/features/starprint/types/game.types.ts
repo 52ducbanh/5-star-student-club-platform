@@ -1,4 +1,12 @@
-import type { GameId } from '@5ss/contracts'
+import type {
+  GameId,
+  LegacyGameRawResultMap,
+  LegacySenseRawResult,
+  LegacySolveRawResult,
+  LegacySprintRawResult,
+  LegacySupportRawResult,
+  LegacySyncRawResult,
+} from '@5ss/contracts'
 
 export type StarprintGameId = GameId
 
@@ -16,55 +24,13 @@ export type StarprintStep =
   | 'FINAL_REVEAL'
   | 'RESULT'
 
-export interface MiniGameResult<T = unknown> {
-  gameId: StarprintGameId
-  rawResult: T
+export interface MiniGameResult<TGameId extends GameId = GameId> {
+  gameId: TGameId
+  rawResult: LegacyGameRawResultMap[TGameId]
 }
 
-export interface SolveRawResult {
-  gameId: 'solve'
-  answers: Array<{
-    questionId: string
-    selectedOptionId: string | null
-    responseTimeMs: number
-  }>
-  totalDurationMs: number
-}
-
-export interface SenseRawResult {
-  gameId: 'sense'
-  decisions: Array<{
-    scenarioId: string
-    optionId: string
-    responseTimeMs: number
-  }>
-  totalDurationMs: number
-}
-
-export interface SprintRawResult {
-  gameId: 'sprint'
-  durationMs: number
-  obstaclesEncountered: number
-  obstaclesAvoided: number
-  collisions: number
-  collectiblesAvailable: number
-  collectiblesCollected: number
-  jumpCount: number
-}
-
-export interface SupportRawResult {
-  gameId: 'support'
-  completed: boolean
-  rotations: number
-  elapsedMs: number
-}
-
-export interface SyncRawResult {
-  gameId: 'sync'
-  pairsTotal: number
-  pairsMatched: number
-  mismatches: number
-  flips: number
-  elapsedMs: number
-  completed: boolean
-}
+export type SolveRawResult = LegacySolveRawResult
+export type SenseRawResult = LegacySenseRawResult
+export type SprintRawResult = LegacySprintRawResult
+export type SupportRawResult = LegacySupportRawResult
+export type SyncRawResult = LegacySyncRawResult

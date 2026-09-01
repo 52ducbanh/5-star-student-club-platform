@@ -4,6 +4,8 @@
 
 > **Current status: functional demo.** Marketing copy, initial news/events seed data, contact channels, STARPRINT questions, scoring, archetypes, and visual mappings are provisional. They must not be treated as official club requirements, eligibility guidance, or validated personality assessment rules.
 
+The official STARPRINT v2 7D contract and Local/Global Hidden Profile foundation is present but is not yet connected to the legacy mini-games or result generator. Gameplay, cosine classification, OKLCH palette generation, and v2 persistence remain later checkpoints.
+
 ## Repository layout
 
 The root package is an npm-workspaces orchestrator.
@@ -37,7 +39,7 @@ The marketing shell owns the header, footer, cinematic loader, hash scrolling, a
 - Client: React 19, TypeScript 6, Vite 8, React Router 7, Zustand, Motion, Tailwind CSS 4, Three.js/React Three Fiber, Lenis, and Socket.IO Client.
 - Server: NestJS 11, TypeScript, TypeORM, PostgreSQL, Socket.IO, Sharp, class-validator, and Swagger.
 - Contracts: strict TypeScript package consumed by both client and server.
-- Tests: Jest/ts-jest unit, full-lifecycle, and dynamic content server tests (41 automated test cases).
+- Tests: Jest/ts-jest unit, full-lifecycle, dynamic content, and v2 Hidden Profile foundation tests (76 automated test cases).
 
 ## Prerequisites
 

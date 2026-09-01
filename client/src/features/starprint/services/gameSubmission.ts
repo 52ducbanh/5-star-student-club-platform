@@ -1,17 +1,18 @@
 ﻿import { starprintApi } from './starprintApi'
-import type { StarprintGameId, StarprintStep } from '../types/game.types'
+import type { LegacyGameRawResultMap } from '@5ss/contracts'
+import type { MiniGameResult, StarprintGameId, StarprintStep } from '../types/game.types'
 
-export interface SubmitAndReconcileOptions {
+export interface SubmitAndReconcileOptions<TGameId extends StarprintGameId> {
   sessionId: string
-  gameId: StarprintGameId
-  rawResult: unknown
+  gameId: TGameId
+  rawResult: LegacyGameRawResultMap[TGameId]
   nextStep: StarprintStep
   markGameCompleted: (gameId: StarprintGameId) => void
-  addGameResult: (result: { gameId: StarprintGameId; rawResult: unknown }) => void
+  addGameResult: (result: MiniGameResult<TGameId>) => void
   setStep: (step: StarprintStep) => void
 }
 
-export async function submitGameWithReconciliation({
+export async function submitGameWithReconciliation<TGameId extends StarprintGameId>({
   sessionId,
   gameId,
   rawResult,
@@ -19,7 +20,7 @@ export async function submitGameWithReconciliation({
   markGameCompleted,
   addGameResult,
   setStep,
-}: SubmitAndReconcileOptions): Promise<{ success: boolean; error?: string }> {
+}: SubmitAndReconcileOptions<TGameId>): Promise<{ success: boolean; error?: string }> {
   try {
     await starprintApi.submitGame(sessionId, gameId, { rawResult })
     addGameResult({ gameId, rawResult })

@@ -70,10 +70,13 @@ On a STARPRINT reload, the persisted session ID is reconciled with `GET /api/ses
 `packages/contracts/src` is the public shape boundary:
 
 - `activities/`: `NewsItem`, `EventItem`, `DerivedEventStatus`, `RegistrationRequest`, `RegistrationResponse`, `ContactRequest`, `ContactResponse`.
-- `games/`: game IDs and submission response.
+- `games/`: canonical game IDs/order, explicit legacy raw payloads, forward-compatible v2 `GameRawResultMap`, and legacy/v2 submission shapes.
 - `sessions/`: create/restore shapes and statuses.
-- `starprints/`: generate, publish, result, palette, type, and effect.
+- `starprints/`: legacy result shapes plus the official seven traits, Local/Global Hidden Profile types, Star Type/effect identifiers, and exact-five `WingPalette`.
 - `sky/`: public star and `star.created` event.
+- `versions/`: centralized legacy-v1 and official-v2 raw/content/scoring/profile/palette identifiers.
+
+The currently active game endpoint remains explicitly legacy and rejects payloads carrying v2 version fields. Official v2 raw contracts cannot be submitted through it until each game receives its migration and authoritative validator. The standalone server engine at `server/src/modules/games/scoring/v2/hidden-profile.engine.ts` requires an explicit declaration for all seven traits: structural non-observability is `null`, while poor performance or timeout after valid opportunities is numeric `0`. It normalizes game-supplied contribution/opportunity pairs and performs unweighted, non-null aggregation; an all-zero observed profile is complete, while `insufficient-evidence` means a trait has no observing source. The engine is not wired into generation yet.
 
 When a network shape changes:
 

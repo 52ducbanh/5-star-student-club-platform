@@ -13,7 +13,8 @@
 3. Server-backed news, events, event registration, and contact submission experiences (NestJS + PostgreSQL).
 4. STARPRINT Platform:
    - **Current Implementation:** server-backed five-game flow (`solve`, `sense`, `sprint`, `support`, `sync`) with provisional/legacy 5-dimension scoring (`focus`, `explore`, `energy`, `social`, `adapt`) and 5 legacy star archetypes (`NAVIGATOR`, `EXPLORER`, `CATALYST`, `CONNECTOR`, `VISIONARY`).
-   - **Upcoming Target Specification:** detailed in `Main question for building minigame in 5SS web`, specifying 7 Hidden Profile Traits (Sharpness, Insight, Precision, Initiative, Connection, Adaptation, Persistence), 5 Target Star Types (STRATEGIST, SPARK, SYNERGIST, SEEKER, SUSTAINER), finite 3-lane SPRINT, Cut-the-Rope SUPPORT, and 4×5 Memory/Semantic SYNC. *This new specification is the next major task for Codex and is NOT yet implemented in source code.*
+   - **Official v2 foundation implemented:** shared contracts now define the canonical 7 Hidden Traits, official Star Type/effect identifiers, fixed five-color wing palette, version families, explicit legacy/v2 raw-result maps, and server-side Local/Global Hidden Profile normalization/aggregation. The v2 engine is deliberately not wired into the current game submission/generation path yet.
+   - **Upcoming migrations:** the detailed specification in `Main question for building minigame in 5SS web` still requires game-by-game migration, cosine classification, OKLCH palette generation, Result/Public Star ID work, and additive persistence changes. The current gameplay and generated results remain legacy v1 until those checkpoints are completed.
 5. 5SS Sky: a privacy-filtered public collection with REST loading, Socket.IO updates, 3D rendering, and a grid fallback.
 
 ### Status language
@@ -127,7 +128,7 @@ The migration and seed scripts reference compiled JavaScript. Run `npm run build
 
 ### Routing
 
-`client/src/app/App.tsx` owns all routes and lazy-loads the three STARPRINT/Sky pages.
+`client/src/app/routes/AppRoutes.tsx` owns all routes and lazy-loads the three STARPRINT/Sky pages. `client/src/app/App.tsx` supplies `BrowserRouter` and the global loading provider.
 
 | Path | Shell | Component | URL state |
 | --- | --- | --- | --- |
@@ -182,10 +183,15 @@ Do not revive stale pre-refactor route or query parameter names (`src/*`, `?news
 `packages/contracts/src/index.ts` re-exports:
 
 - `activities`: `NewsItem`, `EventItem`, `DerivedEventStatus`, `RegistrationRequest`, `RegistrationResponse`, `ContactRequest`, `ContactResponse`.
-- `games`: `GameId`, submit request/response, and the five IDs.
+- `games`: canonical `GameId` order; explicit legacy payload contracts; forward-compatible v2 `GameRawResultMap`; legacy and v2 submission request shapes.
 - `sessions`: create/response shapes and lifecycle status union.
-- `starprints`: generation/publication/result shapes, palette, type, and effect.
+- `starprints`: `TraitId`, `LocalTraitProfile` (`number | null`), numeric `GlobalHiddenProfile`, official `StarTypeId`/`StarEffect`, exact-five `WingPalette`, explicit legacy result/effect/palette shapes, and generation/publication responses.
 - `sky`: public star and `star.created` event envelope.
+- `versions`: centralized legacy-v1 and official-v2 identifiers for raw payload, content, scoring, profile model, and palette algorithm. An absent payload version is explicitly treated as legacy v1 during migration.
+
+`@5ss/contracts` now emits Node16/CommonJS so its runtime invariant/version constants can be consumed by the CommonJS NestJS server as well as the Vite client. Jest maps the package to contract source so tests do not depend on a stale generated `dist` directory.
+
+The official v2 profile foundation lives at `server/src/modules/games/scoring/v2/hidden-profile.engine.ts`. Its normalization input must explicitly declare all seven traits: `null` is reserved for a trait the game is structurally not designed to observe, while incorrect answers, timeouts, and zero positive signal use `rawContribution: 0` with a positive maximum from the valid opportunities actually presented. It normalizes authoritative raw/max pairs to `[0,1]`, aggregates each trait using an unweighted mean over non-null game observations, and returns `insufficient-evidence` only when a trait has no observing source across the supplied local profiles. An all-zero but fully observed profile is complete evidence. The legacy submission route rejects versioned v2 payloads; the legacy `ScoringService` remains active and isolated.
 
 `RegistrationRequest` deliberately excludes `eventId`, as the event UUID is supplied through the endpoint route parameter `POST /api/events/:eventId/registrations`.
 
@@ -313,9 +319,10 @@ Default local URLs:
 The Jest test suite discovers `*.spec.ts` and `*.e2e-spec.ts` under `server/`:
 
 - `server/test/scoring.spec.ts`: 13 deterministic scoring/type/palette tests.
+- `server/test/hidden-profile-v2.spec.ts`: 35 focused tests for 7D local normalization, strict structural null/zero semantics, all-zero completeness, no-evidence handling, unweighted global aggregation, finite bounds, contract identifiers, fixed wing palette shape, version separation, and legacy-route rejection of v2 SOLVE/SENSE payloads.
 - `server/test/app.e2e-spec.ts`: 11 STARPRINT full-lifecycle tests.
 - `server/test/activities.e2e-spec.ts`: 17 tests covering News listing/slug/draft exclusion, Event listing/slug/status derivation, Event Registration (success, normalization, duplicate prevention, cross-event registration, disabled/expired rejection, capacity lock, invalid payloads), and Contact submission.
-- **Total automated test cases: 41 (all passing).**
+- **Total automated test cases: 76 across 4 suites (all passing).**
 
 Required repository checks:
 
@@ -330,21 +337,21 @@ npm test
 
 ### TODO GAME DESIGN CONFIRMATION / NEXT CODEX TASK
 
-The upcoming mini-game specification is documented in `Main question for building minigame in 5SS web`. The next coding agent (Codex) will migrate the mini-games from legacy provisional logic to this approved specification:
+The upcoming mini-game specification is documented in `Main question for building minigame in 5SS web`. Checkpoint 1 established official terminology, versioning, typed contracts, and the standalone 7D Local/Global Profile engine. The remaining migration work is:
 
-1. **Hidden Profile Traits:** Migrate from 5 provisional dimensions (`focus`, `explore`, `energy`, `social`, `adapt`) to 7 official traits: `Sharpness`, `Insight`, `Precision`, `Initiative`, `Connection`, `Adaptation`, `Persistence`.
-2. **Star Types:** Migrate to the 5 official types: `STRATEGIST`, `SPARK`, `SYNERGIST`, `SEEKER`, `SUSTAINER`.
+1. **Game integration:** Replace legacy 5D scorers with authoritative per-game v2 contribution/max-opportunity scorers and persist their Local Trait Profiles.
+2. **Star Types:** Implement and integrate cosine classification for the official `STRATEGIST`, `SPARK`, `SYNERGIST`, `SEEKER`, and `SUSTAINER` contracts after the zero-vector/tie policy is finalized.
 3. **SOLVE:** Update logic/speed question bank and trait contribution vectors.
 4. **SENSE:** Update 3 scenario decision matrices for 7-trait vector contributions.
 5. **SPRINT:** Rebuild as a finite 3-lane runner (Left / Right / Jump), 15–18s track length, 20s hard cap, max 2 attempts.
 6. **SUPPORT:** Rebuild as Cut-the-Rope physics/puzzle game with 3 predefined puzzles (10s per puzzle), tap/click rope, and auto-reset after invalid state.
 7. **SYNC:** Rebuild as Memory + Semantic Matching game with 20 cards / 10 pairs (4×5 grid, 30s timer).
-8. **Server Scoring & Contracts:** Reconcile `@5ss/contracts`, NestJS `scoring.service.ts`, TypeORM entities, and unit tests to the 7-trait normalization and deterministic tie-breaking rules.
+8. **Generation/persistence:** Integrate the v2 profile engine, OKLCH palette, official effects, Result/Public Star ID/download, and additive database version/profile fields without fake 5D-to-7D backfills.
 
 ### TODO BUSINESS CONFIRMATION
 
-1. The five archetype names, descriptions, dimensions, thresholds, and tie behavior.
-2. Archetype-to-effect mapping (`flow`, `shimmer`, `spark`, `orbit`, `pulse`).
+1. Final zero-vector and exact near-tie handling for the cosine classifier; official Star Type identifiers are already fixed.
+2. Final visual behavior for the approved Type-to-effect mapping; the official identifiers/mapping are fixed but the renderer is not migrated yet.
 3. Official club copy, milestones, leader information/media, recruitment link, and evidence rules.
 4. Real event data, registration policy, privacy notice, retention, and consent language.
 5. Confirmed in Round 1: Official contact info (`facebook.com/5ss.uet`, `@5ssuet`, `085 901 8686`, `5ss.uet.vnu@gmail.com`, 144 Xuân Thủy), official about statement and tagline (`BEYOND A STAR — WE CREATE OUR OWN LIGHT.`), 4 Core Value colors, and 5 SV5T Criteria colors (`dao-duc`: #ff5c5c, `hoc-tap`: #6cd5f7, `the-luc`: #ffd467, `tinh-nguyen`: #5fe3a1, `hoi-nhap`: #b794f6).
@@ -363,7 +370,7 @@ The upcoming mini-game specification is documented in `Main question for buildin
 
 | Concern | Primary locations |
 | --- | --- |
-| Router/shell isolation | `client/src/app/App.tsx`, `client/src/app/shells/*` |
+| Router/shell isolation | `client/src/app/App.tsx`, `client/src/app/routes/AppRoutes.tsx`, `client/src/app/shells/*` |
 | Marketing navigation and metadata | `client/src/config/site.ts`, `client/src/marketing/components/layout/*` |
 | Contact form & service | `client/src/features/forms/ContactForm.tsx`, `contact.service.ts`, `api/contactApi.ts` |
 | Event registration form & service | `client/src/features/activities/RegistrationForm.tsx`, `registration.service.ts`, `api/registrationApi.ts` |
@@ -376,6 +383,7 @@ The upcoming mini-game specification is documented in `Main question for buildin
 | CSS cascade | `client/src/index.css` and `client/src/styles/*` |
 | 3D scenes | `client/src/three/marketing/*`, `client/src/three/starprint/*` |
 | Public contracts | `packages/contracts/src/*` |
+| STARPRINT v2 profile foundation | `server/src/modules/games/scoring/v2/hidden-profile.engine.ts`, `server/test/hidden-profile-v2.spec.ts` |
 | News module | `server/src/modules/news/*` |
 | Events module | `server/src/modules/events/*` |
 | Contact module | `server/src/modules/contact/*` |
