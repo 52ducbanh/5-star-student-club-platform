@@ -9,148 +9,121 @@ function parseVNDateTime(dateStr: string, timeStr = '00:00'): Date {
   return new Date(`${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:00+07:00`);
 }
 
+/**
+ * Legacy demo slugs to be cleaned up safely so they do not linger in the database.
+ */
+const legacyDemoNewsSlugs = [
+  'khoi-dong-hanh-trinh-5-tot-bat-dau-tu-dau',
+  'ba-cach-duy-tri-nhip-hoc-tap-ben-vung',
+  'khi-hoat-dong-cong-dong-tro-thanh-bai-hoc',
+  'checklist-chuan-bi-cho-mot-workshop-hieu-qua',
+  'van-dong-ngan-nang-luong-dai',
+  'ky-nang-hoi-nhap-trong-thoi-dai-so',
+  'nhap-hoc-cung-5-tot-challenge', // Clean up legacy news slug since this is now an Event
+];
+
+const legacyDemoEventSlugs = [
+  'workshop-thiet-ke-hanh-trinh-5-tot-ca-nhan',
+  '5ss-connect-gap-go-va-chia-se-kinh-nghiem',
+  'ngay-hoi-van-dong-cung-5ss',
+  'chuyen-de-tu-hoat-dong-den-minh-chung',
+];
+
+/**
+ * Real News items backed directly by Data/In4.docx and official Proposal.
+ * Personnel rule: ONLY Lê Thúy Hà is included as approved public leadership.
+ * Bùi Đức Mạnh is mentioned strictly in the context of the international exchange article from UET-News.
+ */
 const seedNews = [
   {
-    slug: 'khoi-dong-hanh-trinh-5-tot-bat-dau-tu-dau',
-    title: 'Khởi động hành trình 5 tốt: bắt đầu từ đâu?',
-    excerpt: 'Gợi ý cách chia hành trình thành những bước nhỏ, rõ ràng và phù hợp nhịp sống sinh viên.',
+    // Source: Data/In4.docx — Tuyển quân section
+    slug: 'uet-5ss-mo-don-tuyen-thanh-vien-gen-01',
+    title: '[UET 5SS] MỞ ĐƠN TUYỂN THÀNH VIÊN GEN 01',
+    excerpt: 'Chuyến tàu mang số hiệu UET 5-Star Student Club (UET 5SS) đã chính thức khởi hành – Mở đơn tuyển thành viên Gen 01!',
     body: [
-      'Bài viết minh họa giới thiệu cách tự đánh giá năm tiêu chí và chọn một điểm bắt đầu phù hợp.',
-      'Thông tin chính thức về tiêu chí và hồ sơ cần được đối chiếu với thông báo của đơn vị phụ trách.',
+      'Ding doong… Ding doong… Cuối cùng sau bao nhiêu ngày mong ngóng và chờ đợi thì chuyến tàu mang số hiệu UET 5-Star Student Club (UET 5SS) đã chính thức khởi hành rồi đây!',
+      'Chắc hẳn bạn đang tìm kiếm một CLB có thể đáp ứng được các tiêu chí như: được tự tin rèn luyện và phát huy tiềm năng của bản thân, được kết nối với những người bạn chung mục tiêu chinh phục danh hiệu "Sinh viên 5 tốt", được học hỏi thêm kinh nghiệm từ các anh chị và có với nhau những khoảnh khắc “đỉnh nóc kịch trần, bay phấp phới”? Vậy thì UET 5SS chính là địa điểm lý tưởng có thể thực hiện hóa những mong muốn của bạn bởi bạn sẽ có cơ hội được gặp gỡ và làm việc trong một môi trường năng động, được góp mặt trong các sự kiện thú vị và hơn thế nữa là được rèn luyện cùng đại gia đình UET 5SS.',
+      'Vậy thì còn chần chừ gì nữa mà không nhấp vào đường link để điền đơn nhỉ? Đừng bỏ lỡ cơ hội tuyệt vời này để tham gia vào hành trình rèn luyện thanh xuân cùng UET 5SS nhé!',
+      'Thông tin đợt tuyển thành viên Gen 01:',
+      '• Đối tượng: Sinh viên K68 - K70 trường Đại học Công nghệ, Đại học Quốc gia Hà Nội.',
+      '• Deadline nộp đơn: 23h59’ ngày 20/08/2026.',
+      '• Link đơn đăng ký: https://forms.gle/Rhh1XmwhFxBE1m6q8',
+      '• Bài đăng Facebook: https://www.facebook.com/share/p/1J1L9M8rUz/',
     ],
-    tag: 'Hành trình',
-    imageUrl: null,
-    publishedAt: parseVNDateTime('18.08.2026', '08:00'),
+    tag: 'Tuyển quân',
+    imageUrl: '/uploads/tuyen-quan-sv5t.png',
+    publishedAt: parseVNDateTime('20.08.2026', '08:00'),
   },
   {
-    slug: 'ba-cach-duy-tri-nhip-hoc-tap-ben-vung',
-    title: 'Ba cách duy trì nhịp học tập bền vững',
-    excerpt: 'Từ mục tiêu học kỳ đến lịch học tuần: những gợi ý nhỏ để tạo đà tiến bộ.',
+    // Source: Data/In4.docx — Trại hè quốc tế section & UET News link
+    slug: 'sinh-vien-uet-trao-doi-quoc-te-tai-dh-su-pham-quang-tay',
+    title: 'Sinh viên UET trao đổi quốc tế tại ĐH Sư phạm Quảng Tây (Trung Quốc): Đi để hội nhập, học để bứt phá',
+    excerpt: 'Chương trình trao đổi quốc tế mang đến trải nghiệm quý giá về học thuật, robot, giao lưu văn hóa và kỹ năng hội nhập cho sinh viên UET.',
     body: [
-      'Nội dung demo đề xuất chia mục tiêu thành tuần, theo dõi tiến độ và dành thời gian phản tư.',
-      'Mỗi sinh viên nên điều chỉnh phương pháp theo lịch học và điều kiện cá nhân.',
-    ],
-    tag: 'Kỹ năng',
-    imageUrl: null,
-    publishedAt: parseVNDateTime('12.08.2026', '09:00'),
-  },
-  {
-    slug: 'khi-hoat-dong-cong-dong-tro-thanh-bai-hoc',
-    title: 'Khi hoạt động cộng đồng trở thành bài học',
-    excerpt: 'Nhìn lại giá trị của trải nghiệm tình nguyện đối với kỹ năng và sự trưởng thành.',
-    body: [
-      'Một hoạt động ý nghĩa không chỉ nằm ở số giờ tham gia mà còn ở mức độ chủ động và bài học rút ra.',
-      'Đây là bài viết mẫu dùng để minh họa cấu trúc tin tức của website.',
-    ],
-    tag: 'Tình nguyện',
-    imageUrl: null,
-    publishedAt: parseVNDateTime('03.08.2026', '10:00'),
-  },
-  {
-    slug: 'checklist-chuan-bi-cho-mot-workshop-hieu-qua',
-    title: 'Checklist chuẩn bị cho một workshop hiệu quả',
-    excerpt: 'Chuẩn bị câu hỏi, ghi chú và một hành động tiếp nối sau mỗi buổi chia sẻ.',
-    body: [
-      'Người tham dự có thể chuẩn bị mục tiêu trước chương trình và ghi lại một hành động sẽ thử ngay sau đó.',
-      'Nội dung chương trình thực tế sẽ do CLB cập nhật.',
-    ],
-    tag: 'Hoạt động',
-    imageUrl: null,
-    publishedAt: parseVNDateTime('26.07.2026', '14:00'),
-  },
-  {
-    slug: 'van-dong-ngan-nang-luong-dai',
-    title: 'Vận động ngắn, năng lượng dài',
-    excerpt: 'Một vài cách đưa vận động vào lịch học bận rộn mà không tạo thêm áp lực.',
-    body: [
-      'Hãy chọn hình thức vận động an toàn, vừa sức và duy trì đều đặn.',
-      'Các khuyến nghị sức khỏe chuyên môn không nằm trong phạm vi của bản demo này.',
-    ],
-    tag: 'Thể lực',
-    imageUrl: null,
-    publishedAt: parseVNDateTime('19.07.2026', '07:30'),
-  },
-  {
-    slug: 'ky-nang-hoi-nhap-trong-thoi-dai-so',
-    title: 'Kỹ năng hội nhập trong thời đại số',
-    excerpt: 'Ngoại ngữ, giao tiếp và tư duy số cùng tạo nên năng lực hội nhập linh hoạt.',
-    body: [
-      'Bài viết mẫu gợi ý sinh viên lựa chọn một kỹ năng để thực hành trong dự án hoặc hoạt động giao lưu.',
-      'Chứng chỉ và điều kiện cụ thể cần được xác minh theo quy định chính thức.',
+      'Không chỉ là cơ hội học tập trong môi trường quốc tế, chương trình trao đổi giữa Trường Đại học Công nghệ – Đại học Quốc gia Hà Nội (VNU-UET) và Trường Đại học Sư phạm Quảng Tây (Trung Quốc) còn mang đến cho sinh viên những trải nghiệm quý giá về học thuật, văn hóa và kỹ năng hội nhập. Với sinh viên Lê Thúy Hà (QH-2023) và Bùi Đức Mạnh (QH-2022), chuyến đi ngắn ngày đã mở ra những góc nhìn mới về công nghệ, nghề nghiệp và hành trình phát triển bản thân.',
+      'Mỗi sinh viên mang về những trải nghiệm và bài học khác nhau, nhưng cả Lê Thúy Hà và Bùi Đức Mạnh đều có chung cảm nhận rằng chương trình trao đổi tại Trường Đại học Sư phạm Quảng Tây không chỉ giúp mở rộng kiến thức chuyên môn mà còn bồi đắp tư duy hội nhập, khả năng thích nghi và sự tự tin khi bước ra môi trường quốc tế.',
+      'Thông qua những giờ học về robot, các hoạt động giao lưu đa văn hóa và cơ hội kết nối với sinh viên nhiều quốc gia, chương trình tiếp tục khẳng định hiệu quả của mối quan hệ hợp tác giữa Trường Đại học Công nghệ và Trường Đại học Sư phạm Quảng Tây trong việc tạo dựng môi trường học tập quốc tế, góp phần trang bị cho sinh viên UET những năng lực cần thiết để sẵn sàng hội nhập và phát triển trong kỷ nguyên số.',
+      'Nguồn: UET-News (https://uet.vnu.edu.vn/sinh-vien-uet-trao-doi-quoc-te-tai-dh-su-pham-quang-tay-trung-quoc-di-de-hoi-nhap-hoc-de-but-pha/)',
     ],
     tag: 'Hội nhập',
-    imageUrl: null,
-    publishedAt: parseVNDateTime('08.07.2026', '16:00'),
+    imageUrl: '/uploads/trai-he.jpg',
+    publishedAt: parseVNDateTime('15.08.2026', '09:00'),
+  },
+  {
+    // Source: Data/Bản sao của ĐỀ ÁN THÀNH LẬP CLB SINH VIÊN 5 TỐT.docx (Thành lập: 28/01/2026)
+    slug: 'thanh-lap-clb-sinh-vien-5-tot-truong-dai-hoc-cong-nghe',
+    title: 'Thành lập Câu lạc bộ Sinh viên 5 Tốt Trường Đại học Công nghệ (UET 5SS)',
+    excerpt: 'Hội Sinh viên Trường ĐH Công nghệ chính thức ra quyết định thành lập CLB Sinh viên 5 Tốt nhằm tạo môi trường rèn luyện toàn diện cho sinh viên.',
+    body: [
+      'Hội Sinh viên Trường Đại học Công nghệ ra quyết định thành lập Câu lạc bộ Sinh viên 5 tốt (UET 5SS) nhằm mục đích hỗ trợ, tuyên truyền cho các bạn sinh viên phấn đấu đạt danh hiệu Sinh viên 5 tốt các cấp.',
+      'CLB được định hướng xây dựng môi trường rèn luyện toàn diện theo 5 tiêu chí: Đạo đức tốt, Học tập tốt, Thể lực tốt, Tình nguyện tốt và Hội nhập tốt. Tạo cộng đồng kết nối những cá nhân ưu tú, chia sẻ kinh nghiệm học tập, nghiên cứu khoa học và kỹ năng mềm trong môi trường kỹ thuật công nghệ.',
+      'Đại diện Ban Chủ nhiệm: Lê Thúy Hà (Chủ nhiệm CLB). Địa điểm sinh hoạt chính thức tại 144 Xuân Thủy, Cầu Giấy, Hà Nội.',
+    ],
+    tag: 'Tin tức',
+    imageUrl: '/uploads/logo-5ss.png',
+    publishedAt: parseVNDateTime('28.01.2026', '08:00'),
   },
 ];
 
-const seedEvents = [
+/**
+ * Confirmed Events:
+ * "Nhập học cùng 5 tốt" confirmed by organizers with official banner (03/09 - 05/09/2026)
+ * and Google Form registration link.
+ */
+const seedEvents: Array<{
+  slug: string;
+  title: string;
+  excerpt: string;
+  body: string[];
+  location: string;
+  imageUrl: string | null;
+  startAt: Date;
+  endAt: Date | null;
+  registrationDeadline: Date | null;
+  capacity: number | null;
+  registrationEnabled: boolean;
+  published: boolean;
+}> = [
   {
-    slug: 'workshop-thiet-ke-hanh-trinh-5-tot-ca-nhan',
-    title: 'Workshop: Thiết kế hành trình 5 tốt cá nhân',
-    excerpt: 'Buổi thực hành demo giúp sinh viên phác thảo mục tiêu và lộ trình cho từng tiêu chí.',
+    // Source: Banner Take 01 (03/09 - 05/09/2026) & Form đăng ký chính thức
+    slug: 'nhap-hoc-cung-5-tot-rinh-ngay-100k',
+    title: 'Nhập học cùng 5 tốt – Rinh ngay 100K (Take 01)',
+    excerpt: 'Thử thách chào đón tân sinh viên: Nhập học cùng 5 tốt – Rinh ngay 100K cùng CLB Sinh viên 5 Tốt Trường Đại học Công nghệ (UET 5SS).',
     body: [
-      'Người tham dự sẽ thử tự đánh giá, chọn tiêu chí ưu tiên và tạo kế hoạch hành động ngắn hạn.',
-      'Lịch và địa điểm trong bản demo chưa phải thông báo chính thức.',
+      'Chào đón các bạn tân sinh viên gia nhập đại gia đình Trường Đại học Công nghệ – ĐHQGHN! CLB Sinh viên 5 Tốt (UET 5SS) mang đến chuỗi sự kiện và thử thách đặc biệt "Nhập học cùng 5 tốt – Rinh ngay 100K" (Take 01).',
+      'Đây là cơ hội tuyệt vời để các bạn tân sinh viên tìm hiểu phong trào Sinh viên 5 Tốt ngay từ những ngày đầu tựu trường, kết nối cùng các anh chị và nhận ngay phần thưởng 100.000 VNĐ cùng các quà tặng đặc quyền từ CLB.',
+      'Thời gian diễn ra: 03/09/2026 – 05/09/2026.',
+      'Địa điểm: Trường Đại học Công nghệ - ĐHQGHN (144 Xuân Thủy, Cầu Giấy, Hà Nội).',
+      'Link biểu mẫu đăng ký tham gia: https://forms.gle/BnS6i2pu7K6hKUsN8',
+      'Hãy nhanh tay điền form đăng ký để nhận ngay những phần quà hấp dẫn và khởi đầu hành trình rèn luyện rực rỡ cùng UET 5SS!',
     ],
-    location: 'Địa điểm sẽ được CLB cập nhật',
-    imageUrl: null,
-    startAt: parseVNDateTime('12.09.2026', '14:00'),
-    endAt: parseVNDateTime('12.09.2026', '16:30'),
-    registrationDeadline: parseVNDateTime('11.09.2026', '23:59'),
-    capacity: 50,
+    location: 'Trường ĐH Công nghệ - ĐHQGHN (144 Xuân Thủy, Cầu Giấy, Hà Nội)',
+    imageUrl: '/uploads/nhap-hoc-cung-5-tot.png',
+    startAt: parseVNDateTime('03.09.2026', '08:00'),
+    endAt: parseVNDateTime('05.09.2026', '23:59'),
+    registrationDeadline: parseVNDateTime('05.09.2026', '23:59'),
+    capacity: null, // Không giới hạn số lượng
     registrationEnabled: true,
-    published: true,
-  },
-  {
-    slug: '5ss-connect-gap-go-va-chia-se-kinh-nghiem',
-    title: '5SS Connect: Gặp gỡ và chia sẻ kinh nghiệm',
-    excerpt: 'Không gian kết nối giữa sinh viên quan tâm tới hành trình rèn luyện toàn diện.',
-    body: [
-      'Chương trình minh họa gồm chia sẻ nhóm nhỏ, hỏi đáp và kết nối bạn đồng hành.',
-      'Thông tin diễn giả và nội dung chính thức sẽ được CLB cập nhật.',
-    ],
-    location: 'Không gian sinh hoạt UET · chờ xác nhận',
-    imageUrl: null,
-    startAt: parseVNDateTime('27.09.2026', '18:30'),
-    endAt: parseVNDateTime('27.09.2026', '20:30'),
-    registrationDeadline: parseVNDateTime('26.09.2026', '23:59'),
-    capacity: 40,
-    registrationEnabled: true,
-    published: true,
-  },
-  {
-    slug: 'ngay-hoi-van-dong-cung-5ss',
-    title: 'Ngày hội vận động cùng 5SS',
-    excerpt: 'Hoạt động mẫu khuyến khích vận động vừa sức và tinh thần đồng đội.',
-    body: [
-      'Sự kiện này là dữ liệu minh họa cho trạng thái “Đã kết thúc”.',
-      'Không dùng nội dung này làm căn cứ xác nhận tham gia thực tế.',
-    ],
-    location: 'Khu khuôn viên UET · nội dung minh họa',
-    imageUrl: null,
-    startAt: parseVNDateTime('20.06.2026', '07:00'),
-    endAt: parseVNDateTime('20.06.2026', '10:00'),
-    registrationDeadline: parseVNDateTime('19.06.2026', '23:59'),
-    capacity: 100,
-    registrationEnabled: false,
-    published: true,
-  },
-  {
-    slug: 'chuyen-de-tu-hoat-dong-den-minh-chung',
-    title: 'Chuyên đề: Từ hoạt động đến minh chứng',
-    excerpt: 'Buổi chia sẻ mẫu về cách sắp xếp ghi chú và tài liệu cá nhân sau hoạt động.',
-    body: [
-      'Nội dung minh họa tập trung vào thói quen lưu trữ có hệ thống.',
-      'Yêu cầu minh chứng chính thức cần được đối chiếu với hướng dẫn của đơn vị phụ trách.',
-    ],
-    location: 'Trực tiếp tại UET · chờ cập nhật',
-    imageUrl: null,
-    startAt: parseVNDateTime('25.05.2026', '19:00'),
-    endAt: parseVNDateTime('25.05.2026', '20:30'),
-    registrationDeadline: parseVNDateTime('24.05.2026', '23:59'),
-    capacity: 60,
-    registrationEnabled: false,
     published: true,
   },
 ];
@@ -163,7 +136,26 @@ async function seed() {
   const newsRepo = dataSource.getRepository(News);
   const eventRepo = dataSource.getRepository(Event);
 
-  console.log(`Seeding ${seedNews.length} news items (upsert by slug)...`);
+  // 1. Clean up known legacy demo news slugs
+  for (const demoSlug of legacyDemoNewsSlugs) {
+    const existing = await newsRepo.findOne({ where: { slug: demoSlug } });
+    if (existing) {
+      await newsRepo.delete(existing.id);
+      console.log(`Removed legacy demo news: ${demoSlug}`);
+    }
+  }
+
+  // 2. Clean up known legacy demo event slugs
+  for (const demoSlug of legacyDemoEventSlugs) {
+    const existing = await eventRepo.findOne({ where: { slug: demoSlug } });
+    if (existing) {
+      await eventRepo.delete(existing.id);
+      console.log(`Removed legacy demo event: ${demoSlug}`);
+    }
+  }
+
+  // 3. Upsert real News items
+  console.log(`Seeding ${seedNews.length} real news items (upsert by slug)...`);
   for (const item of seedNews) {
     const existing = await newsRepo.findOne({ where: { slug: item.slug } });
     if (existing) {
@@ -175,19 +167,24 @@ async function seed() {
     }
   }
 
-  console.log(`Seeding ${seedEvents.length} events (upsert by slug)...`);
-  for (const item of seedEvents) {
-    const existing = await eventRepo.findOne({ where: { slug: item.slug } });
-    if (existing) {
-      await eventRepo.update(existing.id, item);
-      console.log(`Updated event: ${item.slug}`);
-    } else {
-      await eventRepo.save(eventRepo.create(item));
-      console.log(`Inserted event: ${item.slug}`);
+  // 4. Seed confirmed Events (if any)
+  if (seedEvents.length > 0) {
+    console.log(`Seeding ${seedEvents.length} events (upsert by slug)...`);
+    for (const item of seedEvents) {
+      const existing = await eventRepo.findOne({ where: { slug: item.slug } });
+      if (existing) {
+        await eventRepo.update(existing.id, item);
+        console.log(`Updated event: ${item.slug}`);
+      } else {
+        await eventRepo.save(eventRepo.create(item));
+        console.log(`Inserted event: ${item.slug}`);
+      }
     }
+  } else {
+    console.log('No unconfirmed events seeded (awaiting confirmed event schedules from club).');
   }
 
-  console.log('Development seed complete.');
+  console.log('Real data seed complete.');
   await dataSource.destroy();
 }
 

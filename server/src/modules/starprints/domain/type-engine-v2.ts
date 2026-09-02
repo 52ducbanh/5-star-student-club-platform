@@ -68,46 +68,46 @@ const STAR_TYPE_EFFECTS: Record<StarTypeId, StarEffect> = {
 export const STAR_TYPE_DEFINITIONS: Record<StarTypeId, StarprintTypeV2> = {
   STRATEGIST: {
     id: 'STRATEGIST',
-    name: 'Chiến Lược Gia',
+    name: 'The Strategist',
     tagline: 'Think with purpose.',
     description:
-      'Bạn là người kết hợp tư duy phân tích và tầm nhìn dài hạn. Luôn biết cách biến thông tin thành kế hoạch hành động hiệu quả.',
+      'Combining analytical reasoning and long-term vision. Transforming information into structured and impactful action plans.',
     coreTraits: ['insight', 'precision', 'persistence'],
     effect: 'SHIMMER',
   },
   SPARK: {
     id: 'SPARK',
-    name: 'Ngọn Lửa',
+    name: 'The Spark',
     tagline: 'Turn energy into action.',
     description:
-      'Năng động, dứt khoát và đầy sáng tạo. Bạn là người đầu tiên hành động và truyền lửa cho cả nhóm.',
+      'Dynamic, decisive, and relentlessly creative. The catalyst who takes initiative and energizes the entire team.',
     coreTraits: ['sharpness', 'initiative', 'adaptation'],
     effect: 'SPARK',
   },
   SYNERGIST: {
     id: 'SYNERGIST',
-    name: 'Người Kết Nối',
+    name: 'The Synergist',
     tagline: 'Connect to create more.',
     description:
-      'Bạn có khả năng xây dựng cầu nối giữa con người và ý tưởng. Mỗi mối quan hệ trong tay bạn đều trở thành một cơ hội cộng tác.',
+      'A natural bridge builder between people and ideas. Every connection you forge becomes an opportunity for collaborative impact.',
     coreTraits: ['connection', 'adaptation', 'initiative'],
     effect: 'ORBIT',
   },
   SEEKER: {
     id: 'SEEKER',
-    name: 'Người Tìm Kiếm',
+    name: 'The Seeker',
     tagline: 'Stay curious. Keep moving.',
     description:
-      'Luôn tò mò và không ngừng học hỏi. Bạn dẫn đầu bằng cách không ngừng tìm kiếm hiểu biết mới và thích nghi nhanh với thế giới thay đổi.',
+      'Driven by endless curiosity and a passion for learning. Leading by exploring new frontiers and adapting swiftly to change.',
     coreTraits: ['sharpness', 'insight', 'adaptation'],
     effect: 'FLOW',
   },
   SUSTAINER: {
     id: 'SUSTAINER',
-    name: 'Người Kiên Trì',
+    name: 'The Sustainer',
     tagline: 'Keep the light going.',
     description:
-      'Bạn là nền tảng vững chắc của mọi nhóm. Kiên định, chính xác và không bao giờ bỏ cuộc trước áp lực.',
+      'The steadfast anchor of every team. Resilient, precise, and unwavering under pressure.',
     coreTraits: ['precision', 'persistence', 'connection'],
     effect: 'PULSE',
   },

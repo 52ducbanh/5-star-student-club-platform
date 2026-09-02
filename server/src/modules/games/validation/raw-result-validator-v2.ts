@@ -15,12 +15,11 @@
 
 import {
   SOLVE_QUESTION_MAP_V2,
-  SOLVE_QUESTIONS_V2,
 } from '../questions/solve-questions-v2.config';
 import {
   SENSE_SCENARIO_MAP_V2,
-  SENSE_SCENARIOS_V2,
 } from '../questions/sense-scenarios-v2.config';
+
 import {
   SPRINT_TRACK_MAP_V2,
   getTrackObstacleIds,
@@ -108,12 +107,8 @@ export function validateSolveRawResultV2(raw: SolveRawResultV2): void {
     }
   }
 
-  // Ensure all required questions are covered
-  const requiredIds = new Set(SOLVE_QUESTIONS_V2.map((q) => q.id));
-  for (const id of requiredIds) {
-    if (!seenIds.has(id)) {
-      reject(`SOLVE v2: missing required questionId: ${id}`);
-    }
+  if (seenIds.size !== SOLVE_REQUIRED_COUNT) {
+    reject(`SOLVE v2: expected exactly ${SOLVE_REQUIRED_COUNT} distinct questions`);
   }
 }
 
@@ -156,13 +151,11 @@ export function validateSenseRawResultV2(raw: SenseRawResultV2): void {
     assertFiniteNonNegative(decision.responseTimeMs, 'responseTimeMs');
   }
 
-  const requiredIds = new Set(SENSE_SCENARIOS_V2.map((s) => s.id));
-  for (const id of requiredIds) {
-    if (!seenIds.has(id)) {
-      reject(`SENSE v2: missing required scenarioId: ${id}`);
-    }
+  if (seenIds.size !== SENSE_REQUIRED_COUNT) {
+    reject(`SENSE v2: expected exactly ${SENSE_REQUIRED_COUNT} distinct scenarios`);
   }
 }
+
 
 export function validateSprintRawResultV2(raw: SprintRawResultV2): void {
   if (raw.payloadVersion !== V2_PAYLOAD_VERSION) {
@@ -186,9 +179,9 @@ export function validateSprintRawResultV2(raw: SprintRawResultV2): void {
       reject(`SPRINT v2: attemptNumber must be 1 or 2, got ${attempt.attemptNumber}`);
     }
     assertFiniteNonNegative(attempt.durationMs, 'attempt.durationMs');
-    if (attempt.durationMs > 20001) {
+    if (attempt.durationMs > 30001) {
       // Allow 1ms tolerance
-      reject(`SPRINT v2: attempt durationMs exceeds 20s hard cap: ${attempt.durationMs}`);
+      reject(`SPRINT v2: attempt durationMs exceeds 30s hard cap: ${attempt.durationMs}`);
     }
     if (typeof attempt.completed !== 'boolean') {
       reject('SPRINT v2: attempt.completed must be a boolean');

@@ -69,10 +69,25 @@ export class Starprint {
   @Column({ type: 'boolean', default: false })
   isPublic: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
+  publishedToSky: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  physicalCardRequested: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  mediaPermission: boolean;
+
+  @Column({ type: 'varchar', nullable: true, default: 'default-2026' })
+  eventId?: string | null;
+
+  @Column({ type: 'varchar', nullable: true, default: '2026.1' })
+  eventEdition?: string | null;
+
+  @Column({ type: 'boolean', default: true })
   consentPhoto: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
   consentName: boolean;
 
   @CreateDateColumn()

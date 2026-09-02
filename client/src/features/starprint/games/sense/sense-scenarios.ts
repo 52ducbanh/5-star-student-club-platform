@@ -1,19 +1,17 @@
-/**
- * Client-side STARPRINT v2 SENSE scenarios.
- * 3 scenarios, each with 5 options A–E.
- * Tendency weights are server-authoritative and NOT exposed to client.
- */
+import { SENSE_SCENARIOS_BY_ID } from '@5ss/contracts'
 
 export interface ClientSenseOption {
-  id: 'A' | 'B' | 'C' | 'D' | 'E';
-  text: string;
+  id: string
+  optionId?: string
+  text: string
 }
 
 export interface ClientSenseScenario {
-  id: string;
-  categoryLabel: string;
-  situation: string;
-  options: ClientSenseOption[];
+  id: string
+  title?: string
+  categoryLabel: string
+  situation: string
+  options: ClientSenseOption[]
 }
 
 export const SENSE_SCENARIOS_CLIENT: ClientSenseScenario[] = [
@@ -56,4 +54,30 @@ export const SENSE_SCENARIOS_CLIENT: ClientSenseScenario[] = [
       { id: 'E', text: 'Tăng tốc độ học bằng cách thực hành nhiều hơn dù chưa chắc chắn' },
     ],
   },
-];
+]
+
+export function getSenseScenariosForSession(assignedIds?: string[]): ClientSenseScenario[] {
+  if (assignedIds && assignedIds.length === 3) {
+    const list: ClientSenseScenario[] = []
+    for (const id of assignedIds) {
+      const s = SENSE_SCENARIOS_BY_ID.get(id)
+      if (s) {
+        list.push({
+          id: s.id,
+          title: s.title,
+          categoryLabel: s.groupName,
+          situation: s.situation,
+          options: s.options.map((opt) => ({
+            id: opt.id,
+            optionId: opt.optionId,
+            text: opt.text,
+          })),
+        })
+      }
+    }
+    if (list.length === 3) {
+      return list
+    }
+  }
+  return SENSE_SCENARIOS_CLIENT
+}

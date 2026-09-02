@@ -1,4 +1,4 @@
-﻿import { NestFactory } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -27,7 +27,15 @@ async function bootstrap() {
   app.useGlobalFilters(new DomainExceptionFilter());
   
   const uploadDir = configService.get<string>('media.localDir', 'uploads');
-  app.use('/uploads', express.static(join(process.cwd(), uploadDir)));
+  app.use(
+    '/uploads',
+    express.static(join(process.cwd(), uploadDir), {
+      setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      },
+    }),
+  );
 
   const config = new DocumentBuilder()
     .setTitle('5SS STARPRINT API')
@@ -38,6 +46,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = configService.get<number>('port') || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();

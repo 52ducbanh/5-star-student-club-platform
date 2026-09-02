@@ -16,10 +16,22 @@ export const starprintApi = {
     return apiClient.get<SessionResponse>(`/sessions/${id}`)
   },
 
-  uploadPhoto(sessionId: string, blob: Blob): Promise<{ photoUrl: string }> {
+  uploadPhoto(sessionId: string, fileOrBlob: Blob | File): Promise<{ photoUrl: string }> {
     const formData = new FormData()
-    formData.append('file', blob, 'photo.jpg')
+    const filename =
+      fileOrBlob instanceof File && fileOrBlob.name
+        ? fileOrBlob.name
+        : fileOrBlob.type === 'image/png'
+          ? 'photo.png'
+          : fileOrBlob.type === 'image/webp'
+            ? 'photo.webp'
+            : 'photo.jpg'
+    formData.append('file', fileOrBlob, filename)
     return apiClient.postMultipart<{ photoUrl: string }>(`/sessions/${sessionId}/photo`, formData)
+  },
+
+  deletePhoto(sessionId: string): Promise<void> {
+    return apiClient.delete(`/sessions/${sessionId}/photo`)
   },
 
   submitGame(sessionId: string, gameId: string, payload: SubmitGameRequest): Promise<SubmitGameResponse> {

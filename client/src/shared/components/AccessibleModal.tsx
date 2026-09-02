@@ -45,6 +45,8 @@ export function AccessibleModal({
     const previousRootOverflow = document.documentElement.style.overflow
     document.body.style.overflow = 'hidden'
     document.documentElement.style.overflow = 'hidden'
+    const globalLenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis
+    globalLenis?.stop()
 
     const timer = window.setTimeout(() => {
       const first = dialogRef.current?.querySelector<HTMLElement>(focusableSelector)
@@ -78,6 +80,7 @@ export function AccessibleModal({
       window.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
       document.documentElement.style.overflow = previousRootOverflow
+      globalLenis?.start()
       previousFocus.current?.focus()
     }
   }, [open])
@@ -87,6 +90,7 @@ export function AccessibleModal({
       {open && (
         <motion.div
           className="modal-backdrop"
+          data-lenis-prevent
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -98,6 +102,7 @@ export function AccessibleModal({
           <motion.div
             ref={dialogRef}
             className={`modal-dialog modal-dialog--${variant} modal-dialog--${size}`}
+            data-lenis-prevent
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -112,7 +117,7 @@ export function AccessibleModal({
                 <X aria-hidden="true" />
               </button>
             </div>
-            <div className="modal-dialog__body">{children}</div>
+            <div className="modal-dialog__body" data-lenis-prevent>{children}</div>
           </motion.div>
         </motion.div>
       )}

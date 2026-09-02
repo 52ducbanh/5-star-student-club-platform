@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AlertCircle, ArrowRight, Calendar, Loader2, Sparkles } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
@@ -6,31 +6,32 @@ import type { NewsItem } from '@5ss/contracts'
 import { ScrollReveal, StaggerContainer, staggerItem } from '@/shared/components/ScrollReveal'
 import { formatDisplayDate } from '@/shared/utils/formatDate'
 import { activitiesApi } from '@/features/activities/services/activitiesApi'
+import { sortNews } from '@/features/activities/utils/activitySorting'
+import { MediaPlaceholder } from '@/shared/components/MediaPlaceholder'
 
 export function ActivitiesSection() {
   const [news, setNews] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let active = true
+  const loadNews = useCallback(() => {
+    setLoading(true)
+    setError(null)
     activitiesApi.fetchNews()
       .then((items) => {
-        if (active) {
-          setNews(items)
-          setLoading(false)
-        }
+        setNews(sortNews(items))
+        setLoading(false)
       })
       .catch((err) => {
-        if (active) {
-          setError(err?.message || 'Không thể tải tin tức.')
-          setLoading(false)
-        }
+        console.error('ActivitiesSection fetch error:', err)
+        setError('Không thể tải dữ liệu hoạt động. Vui lòng thử lại.')
+        setLoading(false)
       })
-    return () => {
-      active = false
-    }
   }, [])
+
+  useEffect(() => {
+    loadNews()
+  }, [loadNews])
 
   const featuredItem = news[0]
   const secondaryItems = news.slice(1, 3)
@@ -61,6 +62,14 @@ export function ActivitiesSection() {
           <div style={{ textAlign: 'center', padding: '36px 0', color: '#ff6b6b' }} role="alert">
             <AlertCircle size={24} style={{ margin: '0 auto 8px' }} aria-hidden="true" />
             <p>{error}</p>
+            <button
+              type="button"
+              className="btn btn--outline"
+              style={{ marginTop: '12px' }}
+              onClick={loadNews}
+            >
+              Thử lại
+            </button>
           </div>
         ) : news.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '36px 0', color: 'rgba(255,255,255,0.6)' }}>
@@ -80,10 +89,19 @@ export function ActivitiesSection() {
                       <Sparkles size={12} aria-hidden="true" />
                       <span>Nổi bật · {featuredItem.tag}</span>
                     </div>
-                    <div className="activity-featured-card__visual-art" aria-hidden="true">
-                      <div className="activity-featured-card__orb activity-featured-card__orb--1" />
-                      <div className="activity-featured-card__orb activity-featured-card__orb--2" />
-                    </div>
+                    {featuredItem.imageUrl ? (
+                      <MediaPlaceholder
+                        src={featuredItem.imageUrl}
+                        alt={featuredItem.title}
+                        fit="poster"
+                        aspectRatio="16/9"
+                      />
+                    ) : (
+                      <div className="activity-featured-card__visual-art" aria-hidden="true">
+                        <div className="activity-featured-card__orb activity-featured-card__orb--1" />
+                        <div className="activity-featured-card__orb activity-featured-card__orb--2" />
+                      </div>
+                    )}
                   </div>
 
                   <div className="activity-featured-card__content">

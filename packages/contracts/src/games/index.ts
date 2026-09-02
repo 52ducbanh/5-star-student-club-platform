@@ -210,3 +210,26 @@ export interface SubmitGameResponse {
   success: boolean;
   completedGameIds: GameId[];
 }
+
+export {
+  SOLVE_CATEGORIES,
+  SOLVE_50_QUESTIONS,
+  SOLVE_QUESTIONS_BY_ID,
+  SOLVE_QUESTIONS_BY_CATEGORY,
+  type SolveCategoryId,
+  type SolveQuestionV2Def,
+} from "./solve-bank-v2.data";
+
+export {
+  SENSE_GROUPS,
+  SENSE_15_SCENARIOS,
+  SENSE_SCENARIOS_BY_ID,
+  SENSE_SCENARIOS_BY_GROUP,
+  TENDENCY_TRAIT_MATRIX,
+  getResponseTimeModifier,
+  SENSE_CONSISTENCY_MULTIPLIER,
+  type SenseGroupCode,
+  type SenseTendency,
+  type SenseOptionV2Def,
+  type SenseScenarioV2Def,
+} from "./sense-bank-v2.data";

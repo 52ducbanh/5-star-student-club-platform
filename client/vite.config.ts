@@ -9,7 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@5ss/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
     },
+
   },
   server: {
     host: true, // Cho phép điện thoại / máy khác cùng mạng Wi-Fi/Hotspot truy cập

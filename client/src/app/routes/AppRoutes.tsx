@@ -58,7 +58,7 @@ export function AppRoutes() {
               path="/star/:id"
               element={
                 <Suspense fallback={<GameRouteFallback label="Đang tải kết quả..." />}>
-                  <StarprintResultPage />
+                  <StarprintResultPage readOnly={true} />
                 </Suspense>
               }
             />

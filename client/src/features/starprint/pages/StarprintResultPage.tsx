@@ -1,25 +1,33 @@
 import { useEffect, useState, useCallback } from "react"
-import { useParams, Link, useNavigate } from "react-router-dom"
+import { useParams, useLocation, Link, useNavigate } from "react-router-dom"
 import { starprintApi } from "../services/starprintApi"
 import { useStarprintStore } from "../store/useStarprintStore"
 import { ApiError } from "@/shared/services/http/apiClient"
 import type { StarprintRenderData } from "../types/api.types"
-import { StarPrintSVG } from "../components/StarPrintSVG"
+import { StarCard } from "../components/StarCard"
+import { exportStarCardToPng } from "../components/StarCardExport"
 import { PublishConsent } from "../components/PublishConsent"
 
-export default function StarprintResultPage() {
+interface StarprintResultPageProps {
+  readOnly?: boolean
+}
+
+export default function StarprintResultPage({ readOnly }: StarprintResultPageProps = {}) {
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
-  const { reset } = useStarprintStore()
+  const isPublicView = Boolean(readOnly || location.pathname.startsWith('/star/'))
+  const { sessionId: storeSessionId, reset } = useStarprintStore()
   const [starprint, setStarprint] = useState<StarprintRenderData | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorType, setErrorType] = useState<"not_found" | "network" | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
-    document.title = "STARPRINT Kết Quả | 5SS UET"
-  }, [])
+    document.title = isPublicView ? "STAR CARD | 5SS UET" : "STARPRINT Kết Quả | 5SS UET"
+  }, [isPublicView])
 
   const fetchStarprint = useCallback(async () => {
     if (!id) return
@@ -113,108 +121,82 @@ export default function StarprintResultPage() {
       })
   }
 
-  const handleDownload = () => {
-    if (!starprint) return
-    const svgElement = document.querySelector('.starprint-result-page__star svg') as SVGSVGElement | null
-    if (!svgElement) return
-
+  const handleDownload = async () => {
+    if (!starprint || isExporting) return
+    setIsExporting(true)
     try {
-      const serializer = new XMLSerializer()
-      const svgString = serializer.serializeToString(svgElement)
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
-      const URL = window.URL || window.webkitURL || window
-      const blobURL = URL.createObjectURL(svgBlob)
-
-      const image = new Image()
-      image.onload = () => {
-        const canvas = document.createElement('canvas')
-        const scale = 2
-        canvas.width = 500 * scale
-        canvas.height = 560 * scale
-        const context = canvas.getContext('2d')
-        if (context) {
-          context.scale(scale, scale)
-          context.fillStyle = '#0b0f19'
-          context.fillRect(0, 0, 500, 560)
-          context.drawImage(image, 50, 20, 400, 400)
-
-          context.fillStyle = '#ffffff'
-          context.font = 'bold 20px system-ui, sans-serif'
-          context.textAlign = 'center'
-          context.fillText(starprint.nickname, 250, 450)
-
-          context.fillStyle = '#ffd467'
-          context.font = '16px system-ui, sans-serif'
-          context.fillText(starprint.type.name, 250, 480)
-
-          context.fillStyle = 'rgba(255,255,255,0.6)'
-          context.font = '12px system-ui, sans-serif'
-          context.fillText(starprint.publicStarId ? `Mã: ${starprint.publicStarId}` : '', 250, 510)
-
-          const pngData = canvas.toDataURL('image/png')
-          const downloadLink = document.createElement('a')
-          downloadLink.download = `starprint-${starprint.publicStarId || starprint.nickname}.png`
-          downloadLink.href = pngData
-          document.body.appendChild(downloadLink)
-          downloadLink.click()
-          document.body.removeChild(downloadLink)
-        }
-        URL.revokeObjectURL(blobURL)
-      }
-      image.src = blobURL
-    } catch {
-      // Fallback: direct SVG download
-      const serializer = new XMLSerializer()
-      const svgString = serializer.serializeToString(svgElement)
-      const blob = new Blob([svgString], { type: 'image/svg+xml' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `starprint-${starprint.publicStarId || starprint.nickname}.svg`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
+      await exportStarCardToPng(starprint)
+    } catch (err) {
+      console.error('Failed to export PNG:', err)
+    } finally {
+      setIsExporting(false)
     }
   }
 
   return (
     <div className="starprint-result-page">
-      <div className="starprint-result-page__star">
-        <StarPrintSVG
-          palette={starprint.palette}
-          effect={starprint.effect}
-          photoUrl={starprint.photoUrl}
-          completedWings={5}
-          size={260}
-        />
-      </div>
-      <div className="starprint-result-page__info">
-        <h1>{starprint.nickname}</h1>
-        <h2>{starprint.type.name}</h2>
-        {starprint.type.tagline && <p className="starprint-tagline"><em>"{starprint.type.tagline}"</em></p>}
-        <p>{starprint.type.description}</p>
-        {starprint.publicStarId && (
-          <div className="starprint-public-id" style={{ margin: '8px 0', fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-            Mã định danh: <code>{starprint.publicStarId}</code>
-          </div>
-        )}
+      <div className="starprint-result-layout">
+        {/* LEFT COLUMN: STAR CARD preview + primary actions */}
+        <div className="starprint-result-layout__card">
+          <StarCard starprint={starprint} />
 
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', margin: '12px 0' }}>
-          <button onClick={handleDownload} className="btn btn--primary" aria-label="Tải ảnh STARPRINT về máy">
-            📥 Tải ảnh STARPRINT
-          </button>
-          <button onClick={handleCopyLink} className="btn btn--outline" aria-label="Sao chép liên kết chia sẻ">
-            {copied ? 'Đã chép liên kết! ✓' : '🔗 Sao chép liên kết'}
-          </button>
+          <div className="starprint-result-layout__actions">
+            <button
+              onClick={handleDownload}
+              className="btn btn--primary"
+              aria-label="Tải thẻ STAR CARD Digital về máy"
+              disabled={isExporting}
+            >
+              {isExporting ? '⏳ Đang tạo ảnh HD...' : '📥 Tải thẻ STAR CARD Digital (PNG)'}
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="btn btn--outline"
+              aria-label="Sao chép liên kết chia sẻ"
+            >
+              {copied ? 'Đã chép liên kết! ✓' : '🔗 Sao chép liên kết'}
+            </button>
+          </div>
         </div>
 
-        {id && <PublishConsent starprintId={id} />}
+        {/* RIGHT COLUMN: Consent panel (Owner only) or Public Info + CTAs */}
+        <div className="starprint-result-layout__panel">
+          {isPublicView ? (
+            <div className="publish-consent">
+              <div className="publish-consent__header">
+                <span className="publish-consent__icon">✨</span>
+                <strong>Ngôi sao đang tỏa sáng trên 5SS Sky</strong>
+              </div>
+              <p style={{ margin: '8px 0 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.5 }}>
+                Ngôi sao này đã được định danh độc bản tại sự kiện Khai hội 5SS UET 2026. Bạn có thể khám phá toàn bộ bầu trời hoặc tạo riêng cho mình một STARPRINT độc bản!
+              </p>
+            </div>
+          ) : (
+            id && (
+              <PublishConsent
+                starprintId={id}
+                sessionId={starprint.sessionId || storeSessionId || ''}
+                initialPhysicalCard={starprint.physicalCardRequested}
+                initialMediaPermission={starprint.mediaPermission}
+              />
+            )
+          )}
 
-        <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "16px" }}>
-          <Link to="/sky" className="btn btn--primary">Xem 5SS Sky ✨</Link>
-          <button onClick={handleCreateNew} className="btn btn--outline">Chơi lại / Tạo ngôi sao mới 🔄</button>
-          <Link to="/" className="btn btn--ghost">Về trang chủ</Link>
+          <div className="starprint-result-layout__ctas">
+            {isPublicView ? (
+              <>
+                <Link to="/starprint?new=1" className="btn btn--primary">Tạo STARPRINT của bạn ✨</Link>
+                <Link to="/sky" className="btn btn--outline">Khám phá 5SS Sky 🌌</Link>
+                <Link to="/" className="btn btn--ghost">← Về trang chủ</Link>
+              </>
+            ) : (
+              <>
+                <Link to="/sky" className="btn btn--primary">Xem 5SS Sky ✨</Link>
+                <button onClick={handleCreateNew} className="btn btn--outline">Tạo ngôi sao mới 🔄</button>
+                <Link to="/" className="btn btn--ghost">Về trang chủ</Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

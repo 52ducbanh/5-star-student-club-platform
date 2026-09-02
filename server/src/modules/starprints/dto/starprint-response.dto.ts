@@ -16,6 +16,9 @@ export class StarprintTypeDto implements StarprintType {
   @ApiProperty()
   name: string;
 
+  @ApiProperty({ required: false })
+  tagline?: string;
+
   @ApiProperty()
   description: string;
 }
@@ -59,4 +62,19 @@ export class StarprintResponseDto implements StarprintResponse {
 
   @ApiProperty()
   isPublic: boolean;
+
+  @ApiProperty({ required: false })
+  publishedToSky?: boolean;
+
+  @ApiProperty({ required: false })
+  physicalCardRequested?: boolean;
+
+  @ApiProperty({ required: false })
+  mediaPermission?: boolean;
+
+  @ApiProperty({ required: false, nullable: true })
+  eventId?: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  eventEdition?: string | null;
 }

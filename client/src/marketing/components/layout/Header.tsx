@@ -264,14 +264,15 @@ export function Header() {
 
         {/* Header Action CTA + Mobile Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <NavLink
-            to="/starprint"
+          <a
+            href="/#lien-he"
             className="nav-cta"
-            aria-label="Tạo STARPRINT"
+            aria-label="Liên hệ"
+            onClick={(e) => handleAnchorClick('#lien-he', e)}
           >
-            Tạo STARPRINT ✨
+            Liên hệ
             <ArrowRight size={13} aria-hidden="true" />
-          </NavLink>
+          </a>
 
           <button
             ref={mobileBtnRef}

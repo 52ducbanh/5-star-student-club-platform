@@ -37,9 +37,10 @@ export const aboutContent = {
     },
   ],
   leader: {
-    name: 'Nội dung sẽ được CLB cập nhật',
-    role: 'Chủ nhiệm CLB',
-    quote: '“Thông điệp truyền cảm hứng từ Chủ nhiệm sẽ được cập nhật tại đây.”',
-    image: null as string | null,
+    name: 'Lê Thúy Hà',
+    role: 'Chủ nhiệm CLB / Founder',
+    quote:
+      '“Tại 5SS, chúng tôi tin mỗi cá nhân là một vì sao độc bản. Bạn không cần phải thay đổi để giống bất kỳ ai, bởi 5SS là bầu trời để những cá tính khác biệt đó hội tụ, cộng hưởng và tỏa sáng rực rỡ nhất.”',
+    image: '/assets/anh-chan-dung.jpg',
   },
 } as const

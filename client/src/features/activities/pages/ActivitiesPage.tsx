@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { AlertCircle, CalendarDays, Clock3, Loader2, MapPin, Newspaper, Sparkles, TicketCheck } from 'lucide-react'
-import { motion, useReducedMotion } from 'motion/react'
+import { AlertCircle, CalendarDays, Clock3, ExternalLink, Loader2, MapPin, Newspaper, Sparkles, TicketCheck } from 'lucide-react'
 import type { EventItem, DerivedEventStatus, NewsItem } from '@5ss/contracts'
 import { AccessibleModal } from '@/shared/components/AccessibleModal'
 import { MediaPlaceholder } from '@/shared/components/MediaPlaceholder'
@@ -10,16 +9,41 @@ import { ScrollReveal } from '@/shared/components/ScrollReveal'
 import { formatDisplayDate, formatTimeRange } from '@/shared/utils/formatDate'
 import { activitiesApi } from '../services/activitiesApi'
 import { RegistrationForm } from '../RegistrationForm'
+import { NewsCard } from '../components/NewsCard'
+import { EventCard } from '../components/EventCard'
+import { sortNews, sortEvents } from '../utils/activitySorting'
+
+function renderParagraphWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const parts = text.split(urlRegex)
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[#5eafe8] underline hover:text-[#90cdf4]"
+          style={{ wordBreak: 'break-all' }}
+        >
+          {part}
+        </a>
+      )
+    }
+    return part
+  })
+}
 
 type ActivityTab = 'news' | 'events'
 type EventFilter = 'all' | DerivedEventStatus
-
-const newsVariants = ['cyan', 'blue', 'violet', 'gold', 'green', 'blue'] as const
 
 export function ActivitiesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState<ActivityTab>('news')
   const [filter, setFilter] = useState<EventFilter>('all')
+  const [visibleNewsCount, setVisibleNewsCount] = useState(9)
+  const [visibleEventsCount, setVisibleEventsCount] = useState(9)
 
   const [news, setNews] = useState<NewsItem[]>([])
   const [events, setEvents] = useState<EventItem[]>([])
@@ -31,7 +55,6 @@ export function ActivitiesPage() {
   const [newsDetail, setNewsDetail] = useState<NewsItem | null>(null)
   const [eventDetail, setEventDetail] = useState<EventItem | null>(null)
   const [registering, setRegistering] = useState(false)
-  const reduceMotion = useReducedMotion()
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -50,7 +73,8 @@ export function ActivitiesPage() {
       })
       .catch((err) => {
         if (active) {
-          setNewsError(err?.message || 'Không thể tải danh sách tin tức.')
+          console.error('Failed to fetch news:', err)
+          setNewsError('Không thể tải danh sách tin tức. Vui lòng thử lại.')
           setLoadingNews(false)
         }
       })
@@ -64,7 +88,8 @@ export function ActivitiesPage() {
       })
       .catch((err) => {
         if (active) {
-          setEventsError(err?.message || 'Không thể tải danh sách sự kiện.')
+          console.error('Failed to fetch events:', err)
+          setEventsError('Không thể tải danh sách sự kiện. Vui lòng thử lại.')
           setLoadingEvents(false)
         }
       })
@@ -139,10 +164,29 @@ export function ActivitiesPage() {
     }
   }, [itemSlug, news, events])
 
-  const visibleEvents = useMemo(
-    () => (filter === 'all' ? events : events.filter((e) => e.status === filter)),
-    [filter, events],
-  )
+  const handleSelectTab = useCallback((newTab: ActivityTab) => {
+    setTab(newTab)
+    setVisibleNewsCount(9)
+    setVisibleEventsCount(9)
+  }, [])
+
+  const handleSelectFilter = useCallback((newFilter: EventFilter) => {
+    setFilter(newFilter)
+    setVisibleEventsCount(9)
+  }, [])
+
+  const sortedNews = useMemo(() => sortNews(news), [news])
+  const visibleNews = useMemo(() => sortedNews.slice(0, visibleNewsCount), [sortedNews, visibleNewsCount])
+  const featuredNews = visibleNews[0]
+  const secondaryNews = visibleNews.slice(1, 3)
+  const regularNews = visibleNews.slice(3)
+  const hasMoreNews = sortedNews.length > visibleNewsCount
+  const remainingNewsCount = sortedNews.length - visibleNewsCount
+
+  const sortedEvents = useMemo(() => sortEvents(events, filter), [events, filter])
+  const visibleEvents = useMemo(() => sortedEvents.slice(0, visibleEventsCount), [sortedEvents, visibleEventsCount])
+  const hasMoreEvents = sortedEvents.length > visibleEventsCount
+  const remainingEventsCount = sortedEvents.length - visibleEventsCount
 
   const openNews = useCallback((item: NewsItem) => {
     setEventDetail(null)
@@ -225,7 +269,7 @@ export function ActivitiesPage() {
               aria-controls="panel-news"
               tabIndex={tab === 'news' ? 0 : -1}
               className={tab === 'news' ? 'is-active' : ''}
-              onClick={() => setTab('news')}
+              onClick={() => handleSelectTab('news')}
               onKeyDown={(e) => handleTabKeyDown(e, 'news')}
             >
               <Newspaper size={16} aria-hidden="true" />
@@ -241,7 +285,7 @@ export function ActivitiesPage() {
               aria-controls="panel-events"
               tabIndex={tab === 'events' ? 0 : -1}
               className={tab === 'events' ? 'is-active' : ''}
-              onClick={() => setTab('events')}
+              onClick={() => handleSelectTab('events')}
               onKeyDown={(e) => handleTabKeyDown(e, 'events')}
             >
               <CalendarDays size={16} aria-hidden="true" />
@@ -251,16 +295,16 @@ export function ActivitiesPage() {
           </div>
         </ScrollReveal>
 
-        {/* News grid */}
+        {/* News Section */}
         {tab === 'news' ? (
-          <section id="panel-news" className="news-grid" role="tabpanel" aria-labelledby="tab-news">
+          <section id="panel-news" role="tabpanel" aria-labelledby="tab-news">
             {loadingNews ? (
-              <div className="loading-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.6)' }}>
+              <div className="loading-state" style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.6)' }}>
                 <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto 12px' }} aria-hidden="true" />
                 <p>Đang tải danh sách tin tức...</p>
               </div>
             ) : newsError ? (
-              <div className="error-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 0', color: '#ff6b6b' }} role="alert">
+              <div className="error-state" style={{ textAlign: 'center', padding: '48px 0', color: '#ff6b6b' }} role="alert">
                 <AlertCircle size={28} style={{ margin: '0 auto 12px' }} aria-hidden="true" />
                 <p>{newsError}</p>
                 <button
@@ -278,41 +322,91 @@ export function ActivitiesPage() {
                   Thử lại
                 </button>
               </div>
-            ) : news.length > 0 ? (
-              news.map((item, index) => (
-                <motion.button
-                  key={item.id}
-                  type="button"
-                  className={`news-card${index === 0 ? ' news-card--featured' : ''}`}
-                  onClick={() => openNews(item)}
-                  whileHover={reduceMotion ? undefined : { y: -5 }}
-                  whileTap={{ scale: 0.99 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <div className="news-card__media">
-                    <MediaPlaceholder
-                      src={item.imageUrl}
-                      alt={`Ảnh bìa: ${item.title}`}
-                      label={`Tin ${String(index + 1).padStart(2, '0')}`}
-                      variant={newsVariants[index % newsVariants.length]}
-                    />
-                    <span className="news-card__tag">{item.tag}</span>
-                  </div>
-                  <div className="news-card__body">
-                    <time className="news-card__date">{formatDisplayDate(item.publishedAt)}</time>
-                    <h3 className="news-card__title">{item.title}</h3>
-                    <p className="news-card__excerpt">{item.excerpt}</p>
-                    <span className="news-card__cta">
-                      Đọc bài viết <span aria-hidden="true">→</span>
-                    </span>
-                  </div>
-                </motion.button>
-              ))
-            ) : (
-              <div className="empty-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.6)' }}>
+            ) : sortedNews.length === 0 ? (
+              <div className="empty-state" style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.6)' }}>
                 <Sparkles size={24} className="text-[#ffd467]" style={{ margin: '0 auto 12px' }} aria-hidden="true" />
                 <p>Hiện chưa có bài viết tin tức nào.</p>
               </div>
+            ) : sortedNews.length === 1 ? (
+              <div className="activities-editorial-showcase activities-editorial-showcase--single">
+                <NewsCard
+                  item={featuredNews}
+                  variant="featured"
+                  onClick={() => openNews(featuredNews)}
+                  mediaFit="poster"
+                  index={0}
+                />
+              </div>
+            ) : sortedNews.length === 2 ? (
+              <div className="activities-editorial-showcase activities-editorial-showcase--duo">
+                <NewsCard
+                  item={featuredNews}
+                  variant="featured"
+                  onClick={() => openNews(featuredNews)}
+                  mediaFit="poster"
+                  index={0}
+                />
+                <NewsCard
+                  item={secondaryNews[0]}
+                  variant="regular"
+                  onClick={() => openNews(secondaryNews[0])}
+                  mediaFit="poster"
+                  index={1}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="activities-editorial-showcase">
+                  <div className="activities-editorial-showcase__main">
+                    <NewsCard
+                      item={featuredNews}
+                      variant="featured"
+                      onClick={() => openNews(featuredNews)}
+                      mediaFit="poster"
+                      index={0}
+                    />
+                  </div>
+                  <div className="activities-editorial-showcase__secondary">
+                    {secondaryNews.map((item, idx) => (
+                      <NewsCard
+                        key={item.id}
+                        item={item}
+                        variant="secondary"
+                        onClick={() => openNews(item)}
+                        mediaFit="poster"
+                        index={idx + 1}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {regularNews.length > 0 && (
+                  <div className="activities-regular-grid">
+                    {regularNews.map((item, idx) => (
+                      <NewsCard
+                        key={item.id}
+                        item={item}
+                        variant="regular"
+                        onClick={() => openNews(item)}
+                        mediaFit="poster"
+                        index={idx + 3}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {hasMoreNews && (
+                  <div className="activities-load-more">
+                    <button
+                      type="button"
+                      className="btn btn--load-more"
+                      onClick={() => setVisibleNewsCount((prev) => prev + 6)}
+                    >
+                      Xem thêm bài viết ({remainingNewsCount})
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         ) : (
@@ -325,7 +419,7 @@ export function ActivitiesPage() {
                     type="button"
                     className={filter === value ? 'is-active' : ''}
                     aria-pressed={filter === value}
-                    onClick={() => setFilter(value)}
+                    onClick={() => handleSelectFilter(value)}
                   >
                     {label}
                   </button>
@@ -359,33 +453,13 @@ export function ActivitiesPage() {
                 </div>
               ) : visibleEvents.length > 0 ? (
                 visibleEvents.map((item, index) => (
-                  <motion.button
+                  <EventCard
                     key={item.id}
-                    type="button"
-                    className="event-card"
+                    item={item}
                     onClick={() => openEvent(item)}
-                    whileHover={reduceMotion ? undefined : { y: -3 }}
-                    whileTap={{ scale: 0.995 }}
-                  >
-                    <MediaPlaceholder
-                      src={item.imageUrl}
-                      alt={`Ảnh sự kiện: ${item.title}`}
-                      label={`Sự kiện ${String(index + 1).padStart(2, '0')}`}
-                      variant={item.status === 'upcoming' ? 'cyan' : 'blue'}
-                    />
-                    <div className="event-card__body">
-                      <span className={`status-badge status-badge--${item.status}`}>
-                        {item.status === 'upcoming' ? '● Sắp diễn ra' : '○ Đã kết thúc'}
-                      </span>
-                      <h3 className="event-card__title">{item.title}</h3>
-                      <p>{item.excerpt}</p>
-                      <div className="event-meta">
-                        <span><Clock3 size={13} aria-hidden="true" /> {formatDisplayDate(item.startAt)} · {formatTimeRange(item.startAt, item.endAt)}</span>
-                        <span><MapPin size={13} aria-hidden="true" /> {item.location}</span>
-                      </div>
-                    </div>
-                    <span className="event-card__arrow" aria-hidden="true">→</span>
-                  </motion.button>
+                    mediaFit="poster"
+                    index={index}
+                  />
                 ))
               ) : (
                 <div className="event-empty-state">
@@ -395,7 +469,7 @@ export function ActivitiesPage() {
                     <button
                       type="button"
                       className="btn btn--outline"
-                      onClick={() => setFilter('all')}
+                      onClick={() => handleSelectFilter('all')}
                     >
                       Xem tất cả sự kiện
                     </button>
@@ -403,6 +477,18 @@ export function ActivitiesPage() {
                 </div>
               )}
             </div>
+
+            {hasMoreEvents && (
+              <div className="activities-load-more">
+                <button
+                  type="button"
+                  className="btn btn--load-more"
+                  onClick={() => setVisibleEventsCount((prev) => prev + 6)}
+                >
+                  Xem thêm sự kiện ({remainingEventsCount})
+                </button>
+              </div>
+            )}
           </section>
         )}
       </div>
@@ -426,7 +512,7 @@ export function ActivitiesPage() {
               <span>{newsDetail.tag}</span>
               <time>{formatDisplayDate(newsDetail.publishedAt)}</time>
             </div>
-            {newsDetail.body.map((p, idx) => <p key={idx}>{p}</p>)}
+            {newsDetail.body.map((p, idx) => <p key={idx}>{renderParagraphWithLinks(p)}</p>)}
           </article>
         )}
       </AccessibleModal>
@@ -460,17 +546,45 @@ export function ActivitiesPage() {
               <span><Clock3 size={15} /> {formatTimeRange(eventDetail.startAt, eventDetail.endAt)}</span>
               <span><MapPin size={15} /> {eventDetail.location}</span>
             </div>
-            {eventDetail.body.map((p, idx) => <p key={idx}>{p}</p>)}
-            {eventDetail.registrationAvailable && (
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => setRegistering(true)}
-                style={{ marginTop: '8px' }}
-              >
-                <TicketCheck size={16} /> Đăng ký tham gia
-              </button>
-            )}
+            {eventDetail.body.map((p, idx) => <p key={idx}>{renderParagraphWithLinks(p)}</p>)}
+            {(() => {
+              const googleFormLine = eventDetail.body.find(
+                (p) => p.includes('docs.google.com/forms') || p.includes('forms.gle'),
+              )
+              const formMatch = googleFormLine?.match(/https?:\/\/[^\s]+/)
+              const formUrl = formMatch ? formMatch[0] : null
+
+              if (formUrl) {
+                return (
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <a
+                      href={formUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn--primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <ExternalLink size={16} /> Đăng ký qua Google Form ↗
+                    </a>
+                  </div>
+                )
+              }
+
+              if (eventDetail.registrationAvailable) {
+                return (
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={() => setRegistering(true)}
+                    style={{ marginTop: '8px' }}
+                  >
+                    <TicketCheck size={16} /> Đăng ký tham gia
+                  </button>
+                )
+              }
+
+              return null
+            })()}
           </article>
         ))}
       </AccessibleModal>

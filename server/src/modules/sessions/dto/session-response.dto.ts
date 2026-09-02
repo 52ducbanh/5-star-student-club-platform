@@ -23,4 +23,13 @@ export class SessionResponseDto implements SessionResponse {
 
   @ApiProperty({ required: false, nullable: true })
   starprintId: string | null;
+
+  @ApiProperty({ required: false, type: [String] })
+  assignedSolveQuestionIds?: string[];
+
+  @ApiProperty({ required: false, type: [String] })
+  assignedSenseScenarioIds?: string[];
+
+  @ApiProperty({ required: false, type: String })
+  assignedSprintTrackId?: string;
 }

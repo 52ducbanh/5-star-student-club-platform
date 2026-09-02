@@ -1,22 +1,4 @@
-/**
- * Official STARPRINT v2 SOLVE question bank.
- *
- * 5 questions – one from each required category:
- *   1. Pattern / Sequence
- *   2. Visual Precision
- *   3. Quick Logic
- *   4. Rule Shift
- *   5. General / 5SS Knowledge
- *
- * Each question exposes exactly 5 options (A–E).
- * Server owns answer keys; client never receives correctOptionId at runtime.
- *
- * PROVISIONAL — awaiting final BA question content approval.
- * Content version: starprint-content-v2 (see STARPRINT_VERSIONS.officialV2.content)
- *
- * Observed traits: Sharpness, Insight, Precision, Adaptation, Persistence
- * Unobserved traits (must be null in LocalTraitProfile): Initiative, Connection
- */
+import { SOLVE_50_QUESTIONS, SolveQuestionV2Def } from '@5ss/contracts';
 
 export const CONTENT_VERSION_SOLVE_V2 = 'starprint-content-v2' as const;
 
@@ -25,10 +7,15 @@ export type SolveQuestionCategory =
   | 'visual-precision'
   | 'quick-logic'
   | 'rule-shift'
-  | 'general-5ss';
+  | 'general-5ss'
+  | 'pattern_sequence'
+  | 'visual_precision'
+  | 'quick_logic'
+  | 'rule_shift'
+  | 'general_5ss';
 
 export interface SolveOptionV2 {
-  id: 'A' | 'B' | 'C' | 'D' | 'E';
+  id: 'a' | 'b' | 'c' | 'd' | 'e' | 'A' | 'B' | 'C' | 'D' | 'E';
   text: string;
 }
 
@@ -37,12 +24,11 @@ export interface SolveQuestionV2 {
   category: SolveQuestionCategory;
   question: string;
   options: SolveOptionV2[];
-  /** Server-authoritative correct option. Never exposed to client at question-load time. */
-  correctOptionId: 'A' | 'B' | 'C' | 'D' | 'E';
+  correctOptionId: 'a' | 'b' | 'c' | 'd' | 'e' | 'A' | 'B' | 'C' | 'D' | 'E';
 }
 
-export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
-  // 1. Pattern / Sequence
+// Fallback provisional questions preserved for test stability
+export const PROVISIONAL_SOLVE_QUESTIONS: SolveQuestionV2[] = [
   {
     id: 'sv2-q1',
     category: 'pattern-sequence',
@@ -56,7 +42,6 @@ export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
     ],
     correctOptionId: 'C',
   },
-  // 2. Visual Precision
   {
     id: 'sv2-q2',
     category: 'visual-precision',
@@ -70,12 +55,10 @@ export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
     ],
     correctOptionId: 'B',
   },
-  // 3. Quick Logic
   {
     id: 'sv2-q3',
     category: 'quick-logic',
-    question:
-      'Nếu mọi sinh viên đều tham gia CLB, và Nam là sinh viên, thì:',
+    question: 'Nếu mọi sinh viên đều tham gia CLB, và Nam là sinh viên, thì:',
     options: [
       { id: 'A', text: 'Nam không tham gia CLB' },
       { id: 'B', text: 'Không xác định được' },
@@ -85,7 +68,6 @@ export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
     ],
     correctOptionId: 'C',
   },
-  // 4. Rule Shift
   {
     id: 'sv2-q4',
     category: 'rule-shift',
@@ -100,7 +82,6 @@ export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
     ],
     correctOptionId: 'B',
   },
-  // 5. General / 5SS Knowledge
   {
     id: 'sv2-q5',
     category: 'general-5ss',
@@ -116,7 +97,19 @@ export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
   },
 ];
 
+// Combine the 50 official questions from contracts + provisional fallbacks
+export const SOLVE_QUESTIONS_V2: SolveQuestionV2[] = [
+  ...SOLVE_50_QUESTIONS.map((q: SolveQuestionV2Def) => ({
+    id: q.id,
+    category: q.category as SolveQuestionCategory,
+    question: q.question,
+    options: q.options as SolveOptionV2[],
+    correctOptionId: q.correctOptionId as 'a' | 'b' | 'c' | 'd' | 'e',
+  })),
+  ...PROVISIONAL_SOLVE_QUESTIONS,
+];
+
 /** Lookup map for O(1) answer validation */
-export const SOLVE_QUESTION_MAP_V2 = new Map(
+export const SOLVE_QUESTION_MAP_V2 = new Map<string, SolveQuestionV2>(
   SOLVE_QUESTIONS_V2.map((q) => [q.id, q]),
 );

@@ -1,4 +1,4 @@
-﻿import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float, Sparkles, Stars, PerformanceMonitor, Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -75,22 +75,22 @@ function InteractiveStarNode({
 }
 
 /** 3D Sky Assembly positioning stars in a spherical dome */
-function SkyDome({ stars, active, onSelectStar }: { stars: SkyStar[]; active: boolean; onSelectStar?: (star: SkyStar) => void }) {
+function SkyDome({ stars, active, mobile, onSelectStar }: { stars: SkyStar[]; active: boolean; mobile: boolean; onSelectStar?: (star: SkyStar) => void }) {
   const groupRef = useRef<THREE.Group>(null)
   const { pointer } = useThree()
 
   // Calculate deterministic spherical coordinates for each star
   const starPositions = useMemo(() => {
     return stars.map((_, index) => {
-      const phi = Math.acos(-1 + (2 * index) / Math.max(stars.length, 1))
+      const phi = Math.acos(-1 + (2 * (index + 0.5)) / Math.max(stars.length, 1))
       const theta = Math.sqrt(stars.length * Math.PI) * phi
-      const radius = 4.2 + (index % 3) * 0.8
-      const x = radius * Math.cos(theta) * Math.sin(phi)
-      const y = radius * Math.sin(theta) * Math.sin(phi) * 0.6
-      const z = radius * Math.cos(phi)
+      const radius = (mobile ? 3.0 : 4.0) + (index % 4) * 0.45
+      const x = radius * Math.cos(theta) * Math.sin(phi) * (mobile ? 0.9 : 1.0)
+      const y = radius * Math.cos(phi) * (mobile ? 1.25 : 0.8)
+      const z = radius * Math.sin(theta) * Math.sin(phi) * 0.8
       return [x, y, z] as [number, number, number]
     })
-  }, [stars])
+  }, [stars, mobile])
 
   useFrame((_, delta) => {
     if (!active || !groupRef.current) return
@@ -121,7 +121,7 @@ function Scene({ stars, active, mobile, lowPower, onSelectStar }: { stars: SkySt
       <directionalLight position={[5, 5, 5]} color="#ffffff" intensity={2.5} />
       <pointLight position={[0, 0, 0]} color="#6cd5f7" intensity={4} distance={15} />
 
-      <SkyDome stars={stars} active={active} onSelectStar={onSelectStar} />
+      <SkyDome stars={stars} active={active} mobile={mobile} onSelectStar={onSelectStar} />
 
       <Stars
         radius={18}
@@ -185,7 +185,7 @@ export function StarSkyScene({ stars, onSelectStar }: Props) {
         {renderCanvas ? (
           <Canvas
             dpr={dpr}
-            camera={{ position: [0, 0, mobile ? 8.5 : 7.2], fov: mobile ? 58 : 50 }}
+            camera={{ position: [0, 0, mobile ? 6.8 : 7.2], fov: mobile ? 54 : 50 }}
             gl={{ powerPreference: 'high-performance', alpha: true, antialias: !mobile }}
             frameloop={active ? 'always' : 'demand'}
           >

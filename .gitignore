@@ -1,4 +1,4 @@
-﻿# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -37,3 +37,9 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary workspace / scratch / data
+/scratch/
+/figma-starprint-card-patch/
+/image/
+/Data/

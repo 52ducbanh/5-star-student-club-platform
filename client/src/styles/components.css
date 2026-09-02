@@ -200,6 +200,63 @@
   object-fit: cover;
 }
 
+.media-placeholder--image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  display: block;
+}
+
+.media-placeholder--contain {
+  object-fit: contain !important;
+}
+
+.media-placeholder--poster {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 22, 52, 0.95);
+}
+
+.media-placeholder__blur-bg,
+.media-placeholder--poster .media-placeholder__blur-bg {
+  position: absolute;
+  inset: -12%;
+  width: 124% !important;
+  height: 124% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  filter: blur(24px) brightness(0.42);
+  transform: scale(1.1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.media-placeholder__fg,
+.media-placeholder--poster .media-placeholder__fg {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  z-index: 1;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+}
+
 /* Orbit decorative ring */
 .media-placeholder__orbit {
   position: absolute;
@@ -258,14 +315,6 @@
     linear-gradient(145deg, rgba(24, 64, 124, 0.75), rgba(12, 36, 78, 0.9));
 }
 
-/* ── Glass card ─────────────────────────────────────────────── */
-.glass-card {
-  border: 1.5px solid var(--border);
-  border-radius: var(--r-xl);
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
 
 /* ── Accessible modal ───────────────────────────────────────── */
 .modal-backdrop {
@@ -406,8 +455,8 @@
     box-shadow var(--dur-base) var(--ease-out);
 }
 
-.form-field input { height: 46px; padding: 0 14px; font-size: 14px; }
-.form-field textarea { min-height: 110px; padding: 12px 14px; font-size: 14px; line-height: 1.55; resize: vertical; }
+.form-field input { height: 46px; padding: 0 14px; font-size: 16px; }
+.form-field textarea { min-height: 110px; padding: 12px 14px; font-size: 16px; line-height: 1.55; resize: vertical; }
 
 .form-field input:hover,
 .form-field textarea:hover { border-color: rgba(255, 212, 103, 0.45); }

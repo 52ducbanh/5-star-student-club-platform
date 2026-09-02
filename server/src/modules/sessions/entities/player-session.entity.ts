@@ -21,6 +21,15 @@ export class PlayerSession {
   @Column({ type: 'enum', enum: SessionStatus, default: SessionStatus.IN_PROGRESS })
   status: SessionStatus;
 
+  @Column({ type: 'jsonb', nullable: true })
+  assignedSolveQuestionIds?: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  assignedSenseScenarioIds?: string[] | null;
+
+  @Column({ type: 'varchar', length: 32, nullable: true, default: 'track-a' })
+  assignedSprintTrackId?: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

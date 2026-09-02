@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -217,6 +217,7 @@ describe('STARPRINT Full Lifecycle (e2e)', () => {
       .expect(201);
 
     starprintId = res.body.id;
+    const publicStarId = res.body.publicStarId;
     expect(res.body).toHaveProperty('id');
     expect(res.body).toHaveProperty('palette');
     expect(res.body.palette.length).toBe(5);
@@ -227,33 +228,85 @@ describe('STARPRINT Full Lifecycle (e2e)', () => {
     expect(res.body).not.toHaveProperty('profile');
   });
 
-  it('9. GET /api/starprints/:id - retrieves starprint details', async () => {
+  it('9. GET /api/starprints/:id - retrieves starprint details (redacting sessionId for public id lookups)', async () => {
+    // Owner lookup by UUID
     const res = await request(app.getHttpServer())
       .get(`/api/starprints/${starprintId}`)
       .expect(200);
 
     expect(res.body.id).toBe(starprintId);
+    expect(res.body.sessionId).toBe(sessionId);
     expect(res.body.nickname).toBe('SinhVienUET');
+
+    // Public lookup by publicStarId
+    if (res.body.publicStarId) {
+      const pubRes = await request(app.getHttpServer())
+        .get(`/api/starprints/${res.body.publicStarId}`)
+        .expect(200);
+
+      expect(pubRes.body.id).toBe(starprintId);
+      // sessionId is redacted for public star ID lookups
+      expect(pubRes.body.sessionId).toBe('');
+      expect(pubRes.body.nickname).toBe('SinhVienUET');
+    }
   });
 
-  it('10. POST /api/starprints/:id/publish - publishes to 5SS Sky with consent', async () => {
-    const res = await request(app.getHttpServer())
+  it('10. POST /api/starprints/:id/publish - enforces session authorization and rejects public star ID mutations', async () => {
+    // 10.1 Rejects mutation using publicStarId
+    const starRes = await request(app.getHttpServer()).get(`/api/starprints/${starprintId}`);
+    const publicStarId = starRes.body.publicStarId;
+
+    if (publicStarId) {
+      const pubMutRes = await request(app.getHttpServer())
+        .post(`/api/starprints/${publicStarId}/publish`)
+        .send({ sessionId, physicalCardRequested: false, mediaPermission: false })
+        .expect(403);
+      expect(pubMutRes.body.code).toBe('UNAUTHORIZED_MUTATION');
+    }
+
+    // 10.2 Rejects mutation when sessionId is missing (ValidationPipe 400)
+    await request(app.getHttpServer())
       .post(`/api/starprints/${starprintId}/publish`)
-      .send({ consentName: true, consentPhoto: false })
+      .send({ physicalCardRequested: false, mediaPermission: false })
+      .expect(400);
+
+    // 10.3 Rejects mutation when an unrelated/wrong sessionId is provided (403 UNAUTHORIZED_SESSION)
+    const wrongSessionRes = await request(app.getHttpServer())
+      .post(`/api/starprints/${starprintId}/publish`)
+      .send({
+        sessionId: '00000000-0000-0000-0000-000000000000',
+        physicalCardRequested: false,
+        mediaPermission: false,
+      })
+      .expect(403);
+    expect(wrongSessionRes.body.code).toBe('UNAUTHORIZED_SESSION');
+
+    // 10.4 Accepts mutation when valid owner sessionId is provided
+    const validRes = await request(app.getHttpServer())
+      .post(`/api/starprints/${starprintId}/publish`)
+      .send({
+        sessionId,
+        physicalCardRequested: false,
+        mediaPermission: false,
+      })
       .expect(200);
 
-    expect(res.body.success).toBe(true);
+    expect(validRes.body.success).toBe(true);
   });
 
-  it('11. GET /api/sky - lists public stars, respecting privacy consents', async () => {
+  it('11. GET /api/sky - lists public stars with canonical shape matching realtime event', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/sky')
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
-    const star = res.body.find((s: any) => s.id === starprintId);
+    const starRes = await request(app.getHttpServer()).get(`/api/starprints/${starprintId}`);
+    const expectedPublicId = starRes.body.publicStarId || starprintId;
+    const star = res.body.find((s: any) => s.id === expectedPublicId || s.id === starprintId);
     expect(star).toBeDefined();
-    expect(star.nickname).toBe('SinhVienUET'); // consentName = true
-    expect(star.photoUrl).toBeNull(); // consentPhoto = false
+    expect(star.id).toBe(expectedPublicId);
+    expect(star.palette).toBeDefined();
+    expect(star.nickname).toBe('SinhVienUET');
+    expect(star.photoUrl).toBeNull();
   });
 });

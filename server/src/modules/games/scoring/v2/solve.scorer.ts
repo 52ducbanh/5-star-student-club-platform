@@ -35,6 +35,11 @@ const CATEGORY_TRAIT_WEIGHTS: Record<
   'quick-logic': { sharpness: 0.4, insight: 0.4, precision: 0.2 },
   'rule-shift': { adaptation: 0.5, sharpness: 0.3, insight: 0.2 },
   'general-5ss': { insight: 0.4, precision: 0.3, sharpness: 0.3 },
+  'pattern_sequence': { sharpness: 0.5, insight: 0.3, precision: 0.2 },
+  'visual_precision': { precision: 0.5, sharpness: 0.3, insight: 0.2 },
+  'quick_logic': { sharpness: 0.4, insight: 0.4, precision: 0.2 },
+  'rule_shift': { adaptation: 0.5, sharpness: 0.3, insight: 0.2 },
+  'general_5ss': { insight: 0.4, precision: 0.3, sharpness: 0.3 },
 };
 
 interface AnswerSignal {
@@ -76,7 +81,9 @@ export function scoreSolveV2(rawResult: SolveRawResultV2): LocalTraitContributio
     const question = SOLVE_QUESTION_MAP_V2.get(answer.questionId);
     if (!question) continue;
 
-    const correct = answer.selectedOptionId === question.correctOptionId;
+    const correct =
+      answer.selectedOptionId !== null &&
+      answer.selectedOptionId.toLowerCase() === question.correctOptionId.toLowerCase();
     const timedOut = answer.timedOut || answer.selectedOptionId === null;
     signals.push({
       correct,

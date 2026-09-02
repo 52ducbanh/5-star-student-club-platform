@@ -17,4 +17,7 @@ export interface SessionResponse {
   status: SessionStatus;
   completedGameIds: GameId[];
   starprintId: string | null;
+  assignedSolveQuestionIds?: string[];
+  assignedSenseScenarioIds?: string[];
+  assignedSprintTrackId?: string;
 }

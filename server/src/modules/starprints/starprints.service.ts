@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Starprint } from './entities/starprint.entity';
@@ -17,6 +17,7 @@ import { DomainException } from '../../common/exceptions/domain.exception';
 import { DomainErrorCode } from '../../common/exceptions/domain-error.enum';
 import { SkyGateway } from '../sky/sky.gateway';
 import { aggregateGlobalHiddenProfile } from '../games/scoring/v2/hidden-profile.engine';
+import { mapStarprintToSkyStar } from '../sky/sky.service';
 import type { SkyStar } from '@5ss/contracts';
 
 function generatePublicStarId(): string {
@@ -85,30 +86,48 @@ export class StarprintsService {
         publicStarId,
         modelVersion: 'starprint-model-v2',
         paletteAlgorithmVersion: 'oklch-5wing-v2',
-        // v2 primary
         wingPalette,
         globalHiddenProfile: globalProfile,
-        // Keep palette/type/effect/profile populated for legacy SKY/response compat
         palette: legacyPalette,
         type: classification.type,
         effect: classification.effect,
         profile: globalProfile,
+        isPublic: true,
+        publishedToSky: true,
+        publishedAt: new Date(),
+        consentName: true,
+        consentPhoto: true,
+        physicalCardRequested: true,
+        mediaPermission: true,
+        eventId: '5ss-khai-hoi-2026',
+        eventEdition: '2026.1',
       });
     } else {
       // --- Legacy v1 path ---
       const profile = this.scoringService.aggregateProfiles(results);
       const typeInfo = this.typeEngine.determineType(profile);
       const palette = this.paletteEngine.generatePalette(dto.baseColor);
+      const publicStarId = generatePublicStarId();
 
       starprint = this.starprintRepository.create({
         sessionId: dto.sessionId,
         baseColor: dto.baseColor,
+        publicStarId,
         palette,
         type: typeInfo.id,
         effect: typeInfo.effect,
         profile,
         wingPalette: null,
         globalHiddenProfile: null,
+        isPublic: true,
+        publishedToSky: true,
+        publishedAt: new Date(),
+        consentName: true,
+        consentPhoto: true,
+        physicalCardRequested: true,
+        mediaPermission: true,
+        eventId: 'default-2026',
+        eventEdition: '2026.1',
       });
     }
 
@@ -118,7 +137,7 @@ export class StarprintsService {
     await queryRunner.startTransaction();
     try {
       await queryRunner.manager.save(Starprint, starprint);
-      await queryRunner.manager.update(PlayerSession, dto.sessionId, { status: SessionStatus.GENERATED });
+      await queryRunner.manager.update(PlayerSession, dto.sessionId, { status: SessionStatus.PUBLISHED });
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -126,6 +145,10 @@ export class StarprintsService {
     } finally {
       await queryRunner.release();
     }
+
+    // Auto-publish to 5SS Sky realtime event after successful DB commit
+    const skyPayload: SkyStar = mapStarprintToSkyStar(starprint, session);
+    this.skyGateway.emitStarCreated(skyPayload);
 
     return this.mapToResponse(starprint, session.nickname, session.photoUrl);
   }
@@ -139,60 +162,70 @@ export class StarprintsService {
     if (!starprint) {
       throw new DomainException(DomainErrorCode.STARPRINT_NOT_FOUND, 'Starprint not found', 404);
     }
-    return this.mapToResponse(starprint, starprint.session?.nickname, starprint.session?.photoUrl);
+    // Only return sessionId if looked up by internal UUID (owner); redact for publicStarId lookups
+    return this.mapToResponse(starprint, starprint.session?.nickname, starprint.session?.photoUrl, isUuid);
   }
 
   async publish(id: string, dto: PublishStarprintDto): Promise<void> {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (!isUuid) {
+      throw new DomainException(
+        DomainErrorCode.UNAUTHORIZED_MUTATION,
+        'Public star ID cannot be used for mutation. Starprint UUID and owner session required.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     const starprint = await this.starprintRepository.findOne({
-      where: isUuid ? { id } : { publicStarId: id },
+      where: { id },
       relations: ['session'],
     });
     if (!starprint) {
       throw new DomainException(DomainErrorCode.STARPRINT_NOT_FOUND, 'Starprint not found', 404);
     }
 
-    const wasAlreadyPublic = starprint.isPublic;
+    if (!dto.sessionId || starprint.sessionId !== dto.sessionId) {
+      throw new DomainException(
+        DomainErrorCode.UNAUTHORIZED_SESSION,
+        'Unauthorized: session does not own this starprint',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    // Product rule: consentName and consentPhoto are always true.
+    // The user-facing checkboxes for these have been removed; nickname and
+    // portrait are always included in the 5SS Sky public display.
+    starprint.consentName = true;
+    starprint.consentPhoto = true;
+
+    // Physical card rule: If physical_card_requested = true then media_permission = true
+    if (dto.physicalCardRequested) {
+      starprint.physicalCardRequested = true;
+      starprint.mediaPermission = true;
+    } else if (dto.physicalCardRequested !== undefined) {
+      starprint.physicalCardRequested = false;
+      if (dto.mediaPermission !== undefined) {
+        starprint.mediaPermission = dto.mediaPermission;
+      }
+    } else if (dto.mediaPermission !== undefined) {
+      starprint.mediaPermission = dto.mediaPermission;
+    }
+
     starprint.isPublic = true;
-    starprint.consentName = dto.consentName;
-    starprint.consentPhoto = dto.consentPhoto;
+    starprint.publishedToSky = true;
     if (!starprint.publishedAt) {
       starprint.publishedAt = new Date();
     }
 
-    // Execute publication state transition atomically within a database transaction
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      await queryRunner.manager.save(Starprint, starprint);
-      await queryRunner.manager.update(PlayerSession, starprint.sessionId, { status: SessionStatus.PUBLISHED });
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
-
-    // Idempotency: Socket.IO event is ONLY emitted on initial publication to prevent duplicate sky events
-    if (!wasAlreadyPublic) {
-      const payload: SkyStar = {
-        id: starprint.publicStarId || starprint.id,
-        baseColor: starprint.baseColor,
-        palette: starprint.wingPalette || starprint.palette,
-        wingPalette: starprint.wingPalette,
-        type: starprint.type,
-        effect: starprint.effect,
-        nickname: starprint.consentName ? (starprint.session?.nickname ?? null) : null,
-        photoUrl: starprint.consentPhoto ? (starprint.session?.photoUrl ?? null) : null,
-        createdAt: starprint.createdAt ? starprint.createdAt.toISOString() : new Date().toISOString(),
-      };
-      this.skyGateway.emitStarCreated(payload);
-    }
+    await this.starprintRepository.save(starprint);
   }
 
-  private mapToResponse(starprint: Starprint, nickname?: string, photoUrl?: string | null): StarprintResponseDto {
+  private mapToResponse(
+    starprint: Starprint,
+    nickname?: string,
+    photoUrl?: string | null,
+    includeSessionId = true,
+  ): StarprintResponseDto {
     const v2Def = STAR_TYPE_DEFINITIONS[starprint.type as any];
     const legacyDef = Object.values(STAR_TYPES).find((t) => t.id === starprint.type || t.name === starprint.type);
     const typeDef = v2Def
@@ -201,12 +234,13 @@ export class StarprintsService {
 
     return {
       id: starprint.id,
-      sessionId: starprint.sessionId,
+      sessionId: includeSessionId ? starprint.sessionId : '',
       nickname: nickname || '',
       photoUrl: photoUrl || null,
       type: {
         id: typeDef.id,
         name: typeDef.name,
+        tagline: (typeDef as any).tagline,
         description: typeDef.description,
       },
       effect: starprint.effect || (typeDef as any).effect,
@@ -215,7 +249,13 @@ export class StarprintsService {
       baseColor: starprint.baseColor,
       signatureColor: starprint.signatureColor || starprint.baseColor,
       publicStarId: starprint.publicStarId,
+      globalProfile7D: starprint.globalHiddenProfile || null,
       isPublic: starprint.isPublic,
+      publishedToSky: starprint.publishedToSky ?? true,
+      physicalCardRequested: starprint.physicalCardRequested ?? true,
+      mediaPermission: starprint.mediaPermission ?? true,
+      eventId: starprint.eventId ?? 'default-2026',
+      eventEdition: starprint.eventEdition ?? '2026.1',
     };
   }
 }

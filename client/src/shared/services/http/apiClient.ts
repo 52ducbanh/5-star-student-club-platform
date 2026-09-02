@@ -1,4 +1,4 @@
-﻿function getApiBaseUrl(): string {
+function getApiBaseUrl(): string {
   const envUrl = import.meta.env['VITE_API_URL'] as string | undefined
   if (envUrl && envUrl.trim() !== '') {
     return envUrl.replace(/\/+$/, '')
@@ -23,6 +23,9 @@ export function getMediaBaseUrl(): string {
 export function normalizeMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url
+  }
+  if (url.startsWith('/assets/')) {
     return url
   }
   const mediaBase = getMediaBaseUrl()
@@ -87,6 +90,17 @@ export const apiClient = {
       method: 'POST',
       body: formData,
     })
+    return handleResponse<T>(res)
+  },
+
+  async delete<T = void>(path: string): Promise<T> {
+    const baseUrl = getApiBaseUrl()
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: 'DELETE',
+    })
+    if (res.status === 204) {
+      return undefined as T
+    }
     return handleResponse<T>(res)
   },
 }

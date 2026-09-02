@@ -1,4 +1,4 @@
-﻿import { Controller, Post, Param, UseInterceptors, UploadedFile, HttpCode } from '@nestjs/common';
+import { Controller, Post, Delete, Param, UseInterceptors, UploadedFile, HttpCode } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UploadsService } from './uploads.service';
@@ -66,5 +66,13 @@ export class UploadsController {
     await this.sessionsService.updatePhoto(sessionId, photoUrl);
 
     return { photoUrl };
+  }
+
+  @Delete()
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Remove photo for a session' })
+  async deletePhoto(@Param('sessionId') sessionId: string): Promise<void> {
+    await this.sessionsService.findOne(sessionId);
+    await this.sessionsService.updatePhoto(sessionId, null);
   }
 }

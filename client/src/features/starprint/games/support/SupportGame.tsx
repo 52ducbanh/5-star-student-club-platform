@@ -1,38 +1,74 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useStarprintStore } from '../../store/useStarprintStore'
 import { submitGameWithReconciliation } from '../../services/gameSubmission'
-import { SUPPORT_PUZZLES_CLIENT, type ClientSupportPuzzle } from './support-puzzles'
+import { gameSfx } from '../../services/gameSfx'
 import { STARPRINT_VERSIONS } from '@5ss/contracts'
-import type { SupportEventV2, SupportPuzzleResultV2, SupportRawResultV2 } from '@5ss/contracts'
+import type { SupportPuzzleResultV2, SupportRawResultV2 } from '@5ss/contracts'
+import { SUPPORT_LEVELS } from './levels/support-levels'
+import { SupportEngine } from './engine/support-engine'
+import type { SupportObjectState, Point2D } from './engine/support-types'
+import { SupportScene } from './SupportScene'
 
 const PUZZLE_TIME_LIMIT_S = 10
-const PUZZLES = SUPPORT_PUZZLES_CLIENT
+const LEVELS = SUPPORT_LEVELS
 
 export function SupportGame() {
   const [currentP, setCurrentP] = useState(0)
-  const [cutRopes, setCutRopes] = useState<Set<string>>(new Set())
-  const [cutSequence, setCutSequence] = useState<string[]>([])
+  const [timeLeft, setTimeLeft] = useState(PUZZLE_TIME_LIMIT_S)
+  const [attachedRopes, setAttachedRopes] = useState<string[]>(() =>
+    LEVELS[0].ropes.map((r) => r.ropeId),
+  )
+  const [cutRopes, setCutRopes] = useState<string[]>([])
+  const [objectState, setObjectState] = useState<SupportObjectState>('HANGING')
   const [isResetting, setIsResetting] = useState(false)
   const [isSolved, setIsSolved] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(PUZZLE_TIME_LIMIT_S)
+  const [isInvalid, setIsInvalid] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const gameStartRef = useRef(Date.now())
-  const puzzleStartRef = useRef(Date.now())
-  const eventsRef = useRef<SupportEventV2[]>([])
+  const gameStartRef = useRef<number>(Date.now())
+  const puzzleStartRef = useRef<number>(Date.now())
   const puzzleResultsRef = useRef<SupportPuzzleResultV2[]>([])
   const finalResultRef = useRef<SupportRawResultV2 | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Initialize SFX on mount
+  useEffect(() => {
+    gameSfx.initOnFirstUserGesture()
+  }, [])
+
+  // Pure engine instance
+  const engineRef = useRef<SupportEngine>(
+    new SupportEngine(LEVELS[0], 0, Date.now()),
+  )
+
   const { sessionId, setStep, markGameCompleted, addGameResult } = useStarprintStore()
 
+  // Initialize engine on level change
+  useEffect(() => {
+    const level = LEVELS[currentP]
+    const engine = new SupportEngine(level, currentP, Date.now())
+    engineRef.current = engine
+
+    setAttachedRopes(level.ropes.map((r) => r.ropeId))
+    setCutRopes([])
+    setObjectState('HANGING')
+    setIsResetting(false)
+    setIsSolved(false)
+    setIsInvalid(false)
+    setTimeLeft(PUZZLE_TIME_LIMIT_S)
+    puzzleStartRef.current = Date.now()
+  }, [currentP])
+
+  // Submit final results to server
   const submitFinal = useCallback(
     async (rawResult: SupportRawResultV2) => {
       if (!sessionId) return
       setSubmitting(true)
       setError(null)
       finalResultRef.current = rawResult
+
+      gameSfx.play('mini_complete')
 
       const res = await submitGameWithReconciliation({
         sessionId,
@@ -52,31 +88,28 @@ export function SupportGame() {
     [sessionId, markGameCompleted, addGameResult, setStep],
   )
 
+  // Advance to next puzzle or submit game
   const advancePuzzle = useCallback(
     (completed: boolean, timedOut: boolean) => {
-      const puzzle = PUZZLES[currentP]
       const elapsed = Math.min(Date.now() - puzzleStartRef.current, PUZZLE_TIME_LIMIT_S * 1000)
+      const engine = engineRef.current
 
-      const resultRecord: SupportPuzzleResultV2 = {
-        puzzleId: puzzle.puzzleId,
-        completed,
-        timedOut,
-        durationMs: elapsed,
-        events: [...eventsRef.current],
+      if (timedOut) {
+        engine.timeout()
+        gameSfx.play('timer_timeout')
+      } else {
+        gameSfx.play('mini_complete')
       }
+
+      const resultRecord = engine.getPuzzleResult(elapsed)
+      resultRecord.completed = completed
+      resultRecord.timedOut = timedOut
 
       const nextResults = [...puzzleResultsRef.current, resultRecord]
       puzzleResultsRef.current = nextResults
 
-      if (currentP < PUZZLES.length - 1) {
+      if (currentP < LEVELS.length - 1) {
         setCurrentP((prev) => prev + 1)
-        setCutRopes(new Set())
-        setCutSequence([])
-        setIsResetting(false)
-        setIsSolved(false)
-        setTimeLeft(PUZZLE_TIME_LIMIT_S)
-        eventsRef.current = []
-        puzzleStartRef.current = Date.now()
       } else {
         const rawResult: SupportRawResultV2 = {
           gameId: 'support',
@@ -92,7 +125,12 @@ export function SupportGame() {
     [currentP, submitFinal],
   )
 
-  // Timer per puzzle
+  const advancePuzzleRef = useRef(advancePuzzle)
+  useEffect(() => {
+    advancePuzzleRef.current = advancePuzzle
+  }, [advancePuzzle])
+
+  // Per-puzzle countdown timer (unaffected by resets)
   useEffect(() => {
     if (submitting || isSolved) return
 
@@ -102,7 +140,11 @@ export function SupportGame() {
           if (timerRef.current) clearInterval(timerRef.current)
           return 0
         }
-        return prev - 1
+        const next = prev - 1
+        if (next === 2 || next === 1) {
+          gameSfx.play('timer_tick')
+        }
+        return next
       })
     }, 1000)
 
@@ -114,65 +156,59 @@ export function SupportGame() {
   // Handle timeout
   useEffect(() => {
     if (timeLeft === 0 && !submitting && !isSolved) {
-      advancePuzzle(false, true)
+      advancePuzzleRef.current(false, true)
     }
-  }, [timeLeft, submitting, isSolved, advancePuzzle])
+  }, [timeLeft, submitting, isSolved])
 
-  // Check cut validity against puzzle sequences
-  const handleCutRope = (ropeId: string) => {
-    if (cutRopes.has(ropeId) || isResetting || isSolved || submitting) return
+  // Rope cut handler — shared between swipe-to-cut and tap/click fallback
+  const handleCutRope = useCallback(
+    (ropeId: string, _cutPoint: Point2D) => {
+      if (isResetting || isSolved || submitting) return
 
-    const atMs = Date.now() - puzzleStartRef.current
-    eventsRef.current.push({
-      type: 'rope-cut',
-      atMs,
-      ropeId,
-    })
+      const atMs = Date.now() - puzzleStartRef.current
+      const outcome = engineRef.current.cutRope(ropeId, atMs)
 
-    const nextCuts = [...cutSequence, ropeId]
-    setCutSequence(nextCuts)
-    setCutRopes((prev) => new Set([...prev, ropeId]))
+      if (!outcome.success) return
 
-    const puzzle: ClientSupportPuzzle = PUZZLES[currentP]
+      gameSfx.play('support_cut')
+      gameSfx.vibrate(15)
 
-    // Check if nextCuts matches a complete solution
-    const isComplete = puzzle.validSequences.some(
-      (seq) => seq.length === nextCuts.length && seq.every((c, i) => c === nextCuts[i]),
-    )
+      const engineState = engineRef.current.getState()
+      setAttachedRopes([...engineState.attachedRopes])
+      setCutRopes([...engineState.cutRopes])
+      setObjectState(outcome.nextState)
 
-    if (isComplete) {
-      setIsSolved(true)
-      setTimeout(() => {
-        advancePuzzle(true, false)
-      }, 700)
-      return
-    }
+      if (outcome.validation.status === 'COMPLETE') {
+        setIsSolved(true)
+        gameSfx.play('support_success')
+        gameSfx.vibrate(30)
+        setTimeout(() => {
+          advancePuzzleRef.current(true, false)
+        }, 850)
+        return
+      }
 
-    // Check if nextCuts is a valid prefix of any solution
-    const isValidPrefix = puzzle.validSequences.some(
-      (seq) => seq.length > nextCuts.length && nextCuts.every((c, i) => c === seq[i]),
-    )
+      if (outcome.validation.status === 'INVALID') {
+        setIsInvalid(true)
+        setIsResetting(true)
+        gameSfx.play('support_reset')
+        gameSfx.vibrate([20, 20])
 
-    if (!isValidPrefix) {
-      // Wrong cut sequence! Trigger invalid state and auto-reset
-      eventsRef.current.push({
-        type: 'invalid-state',
-        atMs: Date.now() - puzzleStartRef.current,
-      })
-      setIsResetting(true)
+        setTimeout(() => {
+          const resetAtMs = Date.now() - puzzleStartRef.current
+          engineRef.current.triggerReset(resetAtMs)
+          const resetState = engineRef.current.getState()
 
-      setTimeout(() => {
-        eventsRef.current.push({
-          type: 'auto-reset',
-          atMs: Date.now() - puzzleStartRef.current,
-        })
-        // Reset ropes for the same puzzle; timer continues!
-        setCutRopes(new Set())
-        setCutSequence([])
-        setIsResetting(false)
-      }, 600)
-    }
-  }
+          setAttachedRopes([...resetState.attachedRopes])
+          setCutRopes([])
+          setObjectState('HANGING')
+          setIsInvalid(false)
+          setIsResetting(false)
+        }, 650)
+      }
+    },
+    [isResetting, isSolved, submitting],
+  )
 
   const retrySubmit = () => {
     if (finalResultRef.current) {
@@ -180,130 +216,50 @@ export function SupportGame() {
     }
   }
 
-  const puzzle = PUZZLES[currentP]
+  const level = LEVELS[currentP]
 
   return (
     <div className="game-step support-game" role="region" aria-label="Trò chơi SUPPORT cắt dây hỗ trợ">
       <div className="game-progress" aria-live="polite">
         <span className="game-progress__badge">🤝 SUPPORT</span>
-        <span className="game-progress__step">Câu đố {currentP + 1}/{PUZZLES.length}</span>
+        <span className="game-progress__step">Câu đố {currentP + 1}/{LEVELS.length}</span>
         <span className={`game-progress__timer ${timeLeft <= 3 ? 'timer--urgent' : ''}`} aria-label={`Thời gian: ${timeLeft}s`}>
           ⏱️ {timeLeft}s
         </span>
       </div>
 
-      <div className="game-progress-bar" role="progressbar" aria-valuenow={((currentP + 1) / PUZZLES.length) * 100} aria-valuemin={0} aria-valuemax={100}>
-        <div className="game-progress-bar__fill" style={{ width: `${((currentP + 1) / PUZZLES.length) * 100}%` }} />
+      <div
+        className="game-progress-bar"
+        role="progressbar"
+        aria-valuenow={((currentP + 1) / LEVELS.length) * 100}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="game-progress-bar__fill"
+          style={{ width: `${((currentP + 1) / LEVELS.length) * 100}%` }}
+        />
       </div>
+
+      <p className="game-micro-intro">Vuốt qua dây để đưa ngôi sao tới mục tiêu (~10s/câu đố)</p>
 
       <div className="support-instruction">
-        <h3>{puzzle.title}</h3>
-        <p>{puzzle.instruction}</p>
-        <span className="support-hint">✂️ Chạm hoặc click vào dây để cắt</span>
+        <h3>{level.title}</h3>
+        <p>{level.instruction}</p>
+        <span className="support-hint">✂️ Vuốt hoặc chạm để cắt dây</span>
       </div>
 
-      {/* Cut-the-Rope SVG Stage */}
-      <div className="support-stage-container">
-        <svg viewBox="0 0 100 100" className="support-svg-stage" aria-label="Khu vực dây treo năng lượng">
-          <defs>
-            <radialGradient id="target-glow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#5fe3a1" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#5fe3a1" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="object-glow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffd467" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#ff9900" stopOpacity="0.2" />
-            </radialGradient>
-          </defs>
-
-          {/* Target Portal at Bottom */}
-          <circle cx={puzzle.targetPos.x} cy={puzzle.targetPos.y} r="12" fill="url(#target-glow)" />
-          <circle cx={puzzle.targetPos.x} cy={puzzle.targetPos.y} r="7" fill="#1b2a4a" stroke="#5fe3a1" strokeWidth="1.5" />
-          <text x={puzzle.targetPos.x} y={puzzle.targetPos.y + 2.5} textAnchor="middle" fontSize="6" fill="#5fe3a1">
-            🌀
-          </text>
-
-          {/* Ropes */}
-          {puzzle.ropes.map((rope) => {
-            const isCut = cutRopes.has(rope.ropeId)
-            const midX = (rope.x1 + rope.x2) / 2
-            const midY = (rope.y1 + rope.y2) / 2
-
-            if (isCut) return null
-
-            return (
-              <g key={rope.ropeId} className="rope-group" onClick={() => handleCutRope(rope.ropeId)} role="button" aria-label={`Cắt ${rope.label}`}>
-                {/* Visual Line */}
-                <line
-                  x1={rope.x1}
-                  y1={rope.y1}
-                  x2={rope.x2}
-                  y2={rope.y2}
-                  stroke="#ffd467"
-                  strokeWidth="1.8"
-                  strokeDasharray="2,1"
-                  className="rope-visual-line"
-                />
-                {/* Anchor dot */}
-                <circle cx={rope.x1} cy={rope.y1} r="2.5" fill="#ffd467" />
-                {/* Large Hit Area for mobile finger tap */}
-                <line
-                  x1={rope.x1}
-                  y1={rope.y1}
-                  x2={rope.x2}
-                  y2={rope.y2}
-                  stroke="transparent"
-                  strokeWidth="10"
-                  className="rope-hit-area"
-                />
-                {/* Scissors icon badge at midpoint */}
-                <circle cx={midX} cy={midY} r="3.5" fill="#1a1f36" stroke="#ffd467" strokeWidth="0.8" />
-                <text x={midX} y={midY + 1.2} textAnchor="middle" fontSize="3.5" fill="#fff" pointerEvents="none">
-                  ✂️
-                </text>
-              </g>
-            )
-          })}
-
-          {/* Object (Star Energy Core) */}
-          <g
-            className={`support-object ${isSolved ? 'object--solved' : ''} ${isResetting ? 'object--invalid' : ''}`}
-            style={{
-              transformOrigin: `${puzzle.objectPos.x}% ${puzzle.objectPos.y}%`,
-            }}
-          >
-            <circle
-              cx={isSolved ? puzzle.targetPos.x : puzzle.objectPos.x}
-              cy={isSolved ? puzzle.targetPos.y : puzzle.objectPos.y}
-              r="6.5"
-              fill="url(#object-glow)"
-              stroke="#ffd467"
-              strokeWidth="1"
-            />
-            <text
-              x={isSolved ? puzzle.targetPos.x : puzzle.objectPos.x}
-              y={(isSolved ? puzzle.targetPos.y : puzzle.objectPos.y) + 2.5}
-              textAnchor="middle"
-              fontSize="6"
-              fill="#fff"
-            >
-              ⭐
-            </text>
-          </g>
-        </svg>
-
-        {isResetting && (
-          <div className="support-status-overlay invalid-overlay" aria-live="polite">
-            <span>Sai trình tự · Đang cân bằng lại...</span>
-          </div>
-        )}
-
-        {isSolved && (
-          <div className="support-status-overlay solved-overlay" aria-live="polite">
-            <span>Thành công! Đưa sao vào cổng 🌟</span>
-          </div>
-        )}
-      </div>
+      {/* SVG Playfield Scene */}
+      <SupportScene
+        level={level}
+        attachedRopes={attachedRopes}
+        cutRopes={cutRopes}
+        objectState={objectState}
+        onCutRope={handleCutRope}
+        isSolved={isSolved}
+        isInvalid={isInvalid}
+        isResetting={isResetting}
+      />
 
       {error && (
         <div className="game-error-box" role="alert">

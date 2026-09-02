@@ -13,6 +13,7 @@ import { SyncGame } from "../games/sync/SyncGame"
 import { ColorPickerStep } from "../components/ColorPickerStep"
 import { GeneratingStep } from "../components/GeneratingStep"
 import { FinalReveal } from "../components/FinalReveal"
+import { ConstellationNav } from "../components/ConstellationNav"
 
 export default function StarprintPage() {
   const { sessionId, currentStep, setStep, restoreFromSession, reset } = useStarprintStore()
@@ -74,6 +75,7 @@ export default function StarprintPage() {
 
   return (
     <div className="starprint-container">
+      <ConstellationNav />
       {currentStep !== "INTRO" && currentStep !== "GENERATING" && currentStep !== "FINAL_REVEAL" && (
         <button
           onClick={handleStartFresh}
@@ -81,7 +83,8 @@ export default function StarprintPage() {
           title="Bắt đầu lại từ đầu"
           aria-label="Chơi lại từ đầu"
         >
-          🔄 Bắt đầu lại
+          <span className="reset-btn-icon">🔄</span>
+          <span className="reset-btn-label"> Bắt đầu lại</span>
         </button>
       )}
       {renderStep()}

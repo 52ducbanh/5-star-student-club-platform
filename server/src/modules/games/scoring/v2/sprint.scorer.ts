@@ -35,7 +35,7 @@ import {
   getTrackCollectibleIds,
 } from '../../questions/sprint-tracks-v2.config';
 
-const HARD_CAP_MS = 20000;
+const HARD_CAP_MS = 30000;
 
 interface AttemptMetrics {
   obstaclesEncountered: number;

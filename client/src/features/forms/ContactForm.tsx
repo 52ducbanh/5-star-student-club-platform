@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { AlertCircle, CheckCircle2, Send, Loader2 } from 'lucide-react'
 import { isValidEmail, required } from './validation'
-import { contactService } from './contact.service'
+import { submitContact } from './api/contactApi'
 
 type ContactValues = { name: string; email: string; message: string }
 const initialValues: ContactValues = { name: '', email: '', message: '' }
@@ -34,7 +34,7 @@ export function ContactForm() {
 
     setLoading(true)
     try {
-      await contactService.submit(values)
+      await submitContact(values)
       setValues(initialValues)
       setSuccess(true)
     } catch (err: any) {

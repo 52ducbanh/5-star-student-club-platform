@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, Length, Matches } from 'class-validator';
+import { IsString, IsBoolean, Length, Matches, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import type {
   GenerateStarprintRequest,
@@ -18,11 +18,27 @@ export class GenerateStarprintDto implements GenerateStarprintRequest {
 }
 
 export class PublishStarprintDto implements PublishStarprintRequest {
-  @ApiProperty()
-  @IsBoolean()
-  consentName: boolean;
+  @ApiProperty({ description: 'Owner session ID required for authorization' })
+  @IsString()
+  sessionId: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsBoolean()
-  consentPhoto: boolean;
+  consentName?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  consentPhoto?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  physicalCardRequested?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  mediaPermission?: boolean;
 }

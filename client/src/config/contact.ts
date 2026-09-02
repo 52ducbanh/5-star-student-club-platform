@@ -8,6 +8,7 @@ export const contactConfig = {
   address: {
     label: '144 Xuân Thủy, Cầu Giấy, Hà Nội',
     campus: 'Trường Đại học Công nghệ – ĐHQGHN',
-    mapUrl: null as string | null,
+    mapUrl:
+      'https://maps.google.com/maps?q=Tr%C6%B0%E1%BB%9Dng+%C4%90%E1%BA%A1i+h%E1%BB%8Dc+C%C3%B4ng+ngh%E1%BB%87+-+%C4%90HQGHN%2C+144+Xu%C3%A2n+Th%E1%BB%A7y%2C+C%E1%BA%A7u+Gi%E1%BA%A5y%2C+H%C3%A0+N%E1%BB%99i&t=&z=16&ie=UTF8&iwloc=&output=embed&hl=vi',
   },
 } as const

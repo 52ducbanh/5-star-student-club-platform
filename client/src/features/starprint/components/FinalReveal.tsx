@@ -1,9 +1,11 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { useReducedMotion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import { useStarprintStore } from '../store/useStarprintStore'
 import { StarPrintSVG } from './StarPrintSVG'
+
+import { gameSfx } from '../services/gameSfx'
 
 export function FinalReveal() {
   const { starprint, nickname } = useStarprintStore()
@@ -13,7 +15,10 @@ export function FinalReveal() {
   const [showMeta, setShowMeta] = useState(Boolean(reduceMotion))
 
   useEffect(() => {
-    if (reduceMotion) return
+    if (reduceMotion) {
+      gameSfx.play('starprint_reveal')
+      return
+    }
     const timers: Array<ReturnType<typeof setTimeout>> = []
     for (let i = 1; i <= 5; i++) {
       timers.push(
@@ -25,6 +30,7 @@ export function FinalReveal() {
     timers.push(
       setTimeout(() => {
         setShowMeta(true)
+        gameSfx.play('starprint_reveal')
       }, 2100)
     )
     return () => timers.forEach(clearTimeout)

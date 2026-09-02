@@ -1,27 +1,13 @@
-/**
- * Official STARPRINT v2 SENSE scenario bank.
- *
- * 3 scenarios — each with 5 options (A–E).
- * No right/wrong answer.
- *
- * Internal tendency labels: CARE | ACT | ALIGN | ADAPT | REFLECT
- * Options may map to multiple tendencies with weights.
- *
- * Observed traits: Connection, Initiative, Adaptation, Insight, Precision, Sharpness, Persistence
- * (All 7 traits observed — none are null for SENSE)
- *
- * Response time boundary:
- *   0 <= t < 3000ms   → fast
- *   3000 <= t < 7000ms → neutral
- *   7000 <= t <= 10000ms → deliberative
- *
- * PROVISIONAL — awaiting final BA scenario content approval.
- * Content version: starprint-content-v2
- */
+import {
+  SENSE_15_SCENARIOS,
+  SenseScenarioV2Def,
+  TENDENCY_TRAIT_MATRIX,
+  SenseTendency as ContractSenseTendency,
+} from '@5ss/contracts';
 
 export const CONTENT_VERSION_SENSE_V2 = 'starprint-content-v2' as const;
 
-export type SenseTendency = 'CARE' | 'ACT' | 'ALIGN' | 'ADAPT' | 'REFLECT';
+export type SenseTendency = ContractSenseTendency;
 
 export interface SenseTendencyWeight {
   tendency: SenseTendency;
@@ -29,78 +15,48 @@ export interface SenseTendencyWeight {
 }
 
 export interface SenseOptionV2 {
-  id: 'A' | 'B' | 'C' | 'D' | 'E';
+  id: string;
+  optionId?: string;
   text: string;
-  /**
-   * Tendency weights.
-   * One option can activate multiple tendencies with fractional weights (must sum to 1.0).
-   */
   tendencies: SenseTendencyWeight[];
 }
 
 export interface SenseScenarioV2 {
   id: string;
   category: string;
+  title?: string;
   situation: string;
   options: SenseOptionV2[];
 }
 
 /**
- * Maps option tendency weights to 7-trait contribution vectors.
- * Scoring uses this table to derive per-trait signal from tendency activations.
- *
- * Each tendency contributes to the 7 official traits with canonical weights.
- * Weights are relative factors (0–1), applied per-trait across all activated tendencies.
+ * Official BA Tendency -> Hidden Trait Matrix
+ * Source: spec SENSE section 2.6 / Google Sheet GID 1683291018
  */
-export const TENDENCY_TO_TRAIT_MAP: Record<SenseTendency, Record<string, number>> = {
-  CARE: {
-    connection: 0.85,
-    adaptation: 0.40,
-    persistence: 0.30,
-    insight: 0.25,
-    precision: 0.10,
-    sharpness: 0.05,
-    initiative: 0.05,
-  },
-  ACT: {
-    initiative: 0.90,
-    sharpness: 0.50,
-    adaptation: 0.35,
-    persistence: 0.30,
-    precision: 0.15,
-    insight: 0.10,
-    connection: 0.10,
-  },
-  ALIGN: {
-    connection: 0.70,
-    insight: 0.60,
-    precision: 0.50,
-    adaptation: 0.30,
-    persistence: 0.25,
-    initiative: 0.15,
-    sharpness: 0.10,
-  },
-  ADAPT: {
-    adaptation: 0.90,
-    initiative: 0.45,
-    sharpness: 0.40,
-    insight: 0.35,
-    persistence: 0.20,
-    connection: 0.15,
-    precision: 0.10,
-  },
-  REFLECT: {
-    insight: 0.85,
-    precision: 0.65,
-    persistence: 0.50,
-    adaptation: 0.25,
-    connection: 0.20,
-    sharpness: 0.15,
-    initiative: 0.05,
-  },
-};
+export const TENDENCY_TO_TRAIT_MAP: Record<SenseTendency, Record<string, number>> = TENDENCY_TRAIT_MATRIX;
 
-export const SENSE_SCENARIOS_V2: SenseScenarioV2[] = [
+/** Official 15 scenarios from BA Google Sheet */
+export const OFFICIAL_SENSE_SCENARIOS_V2: SenseScenarioV2[] = SENSE_15_SCENARIOS.map(
+  (s: SenseScenarioV2Def) => ({
+    id: s.id,
+    category: s.groupName,
+    title: s.title,
+    situation: s.situation,
+    options: s.options.map((opt) => ({
+      id: opt.id,
+      optionId: opt.optionId,
+      text: opt.text,
+      tendencies: [
+        { tendency: opt.primaryTendency, weight: opt.weightPrimary },
+        ...(opt.secondaryTendency
+          ? [{ tendency: opt.secondaryTendency, weight: opt.weightSecondary }]
+          : []),
+      ],
+    })),
+  }),
+);
+
+export const PROVISIONAL_SENSE_SCENARIOS_V2: SenseScenarioV2[] = [
   {
     id: 'sv2-s1',
     category: 'team-collaboration',
@@ -129,8 +85,8 @@ export const SENSE_SCENARIOS_V2: SenseScenarioV2[] = [
       },
       {
         id: 'E',
-        text: 'Ghi lại lỗi để cải thiện ở phiên bản tiếp theo, nộp đúng hạn trước',
-        tendencies: [{ tendency: 'REFLECT', weight: 0.5 }, { tendency: 'ADAPT', weight: 0.5 }],
+        text: 'Đề xuất lùi deadline với ban tổ chức để sửa triệt để',
+        tendencies: [{ tendency: 'CARE', weight: 0.7 }, { tendency: 'ALIGN', weight: 0.3 }],
       },
     ],
   },
@@ -202,7 +158,12 @@ export const SENSE_SCENARIOS_V2: SenseScenarioV2[] = [
   },
 ];
 
+export const SENSE_SCENARIOS_V2: SenseScenarioV2[] = [
+  ...OFFICIAL_SENSE_SCENARIOS_V2,
+  ...PROVISIONAL_SENSE_SCENARIOS_V2,
+];
+
 /** Lookup map for O(1) validation */
-export const SENSE_SCENARIO_MAP_V2 = new Map(
+export const SENSE_SCENARIO_MAP_V2 = new Map<string, SenseScenarioV2>(
   SENSE_SCENARIOS_V2.map((s) => [s.id, s]),
 );

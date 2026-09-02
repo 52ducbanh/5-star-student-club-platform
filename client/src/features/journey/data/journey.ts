@@ -192,4 +192,4 @@ export const journeyCriteria: JourneyCriterion[] = [
 ]
 
 export const journeyStorageKey = 'uet5ss:journey-progress:v1'
-export const journeyDisclaimer = 'Nội dung minh họa mang tính gợi ý rèn luyện – không thay thế tiêu chuẩn chính thức của Hội Sinh viên.'
+export const journeyDisclaimer = 'Nội dung checklist mang tính gợi ý lộ trình rèn luyện – sinh viên đối chiếu hồ sơ chính thức theo thông báo của Hội Sinh viên.'

@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { StarprintStep, StarprintGameId, MiniGameResult } from '../types/game.types'
 import type { StarprintRenderData } from '../types/api.types'
@@ -12,6 +12,8 @@ interface StarprintGameState {
   gameResults: MiniGameResult[]
   selectedColor: string | null
   starprint: StarprintRenderData | null
+  assignedSolveQuestionIds?: string[]
+  assignedSenseScenarioIds?: string[]
 }
 
 interface StarprintActions {
@@ -23,7 +25,13 @@ interface StarprintActions {
   addGameResult(result: MiniGameResult): void
   setSelectedColor(color: string): void
   setStarprint(data: StarprintRenderData): void
-  restoreFromSession(session: { completedGameIds: string[] }): void
+  setAssignments(solveIds?: string[], senseIds?: string[]): void
+  restoreFromSession(session: {
+    completedGameIds: string[]
+    assignedSolveQuestionIds?: string[]
+    assignedSenseScenarioIds?: string[]
+    photoUrl?: string | null
+  }): void
   reset(): void
 }
 
@@ -66,15 +74,21 @@ export const useStarprintStore = create<StarprintGameState & StarprintActions>()
         set((state) => ({ gameResults: [...state.gameResults, result] })),
       setSelectedColor: (color) => set({ selectedColor: color }),
       setStarprint: (data) => set({ starprint: data }),
+      setAssignments: (solveIds, senseIds) =>
+        set({ assignedSolveQuestionIds: solveIds, assignedSenseScenarioIds: senseIds }),
       restoreFromSession: (session) => {
         const completedGameIds = session.completedGameIds as StarprintGameId[]
         set((state) => {
-          // If no games completed yet and user was on CAMERA or PLAYER_INFO, preserve that step
+          const assignments = {
+            assignedSolveQuestionIds: session.assignedSolveQuestionIds ?? state.assignedSolveQuestionIds,
+            assignedSenseScenarioIds: session.assignedSenseScenarioIds ?? state.assignedSenseScenarioIds,
+          }
+          const restoredPhoto = session.photoUrl !== undefined ? session.photoUrl : state.photoPreviewUrl
           if (completedGameIds.length === 0 && (state.currentStep === 'CAMERA' || state.currentStep === 'PLAYER_INFO')) {
-            return { completedGameIds }
+            return { completedGameIds, photoPreviewUrl: restoredPhoto, ...assignments }
           }
           const nextStep = deriveStepFromCompletedGames(completedGameIds)
-          return { completedGameIds, currentStep: nextStep }
+          return { completedGameIds, photoPreviewUrl: restoredPhoto, currentStep: nextStep, ...assignments }
         })
       },
       reset: () => set(initialState),
@@ -85,9 +99,12 @@ export const useStarprintStore = create<StarprintGameState & StarprintActions>()
       partialize: (state) => ({
         sessionId: state.sessionId,
         nickname: state.nickname,
+        photoPreviewUrl: state.photoPreviewUrl,
         currentStep: state.currentStep,
         completedGameIds: state.completedGameIds,
         selectedColor: state.selectedColor,
+        assignedSolveQuestionIds: state.assignedSolveQuestionIds,
+        assignedSenseScenarioIds: state.assignedSenseScenarioIds,
       }),
     },
   ),

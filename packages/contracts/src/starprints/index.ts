@@ -83,8 +83,11 @@ export interface GenerateStarprintRequest {
 }
 
 export interface PublishStarprintRequest {
-  consentName: boolean;
-  consentPhoto: boolean;
+  sessionId: string;
+  consentName?: boolean;
+  consentPhoto?: boolean;
+  physicalCardRequested?: boolean;
+  mediaPermission?: boolean;
 }
 
 export interface StarprintResponse {
@@ -101,4 +104,9 @@ export interface StarprintResponse {
   publicStarId?: string | null;
   globalProfile7D?: GlobalHiddenProfile | null;
   isPublic: boolean;
+  publishedToSky?: boolean;
+  physicalCardRequested?: boolean;
+  mediaPermission?: boolean;
+  eventId?: string | null;
+  eventEdition?: string | null;
 }

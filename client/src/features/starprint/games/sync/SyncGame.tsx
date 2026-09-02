@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useStarprintStore } from '../../store/useStarprintStore'
 import { submitGameWithReconciliation } from '../../services/gameSubmission'
+import { gameSfx } from '../../services/gameSfx'
 import { SYNC_CARDS_CLIENT, SYNC_DECK_ID, shuffleDeckWithSeed, type ClientSyncCard } from './sync-deck'
 import { STARPRINT_VERSIONS } from '@5ss/contracts'
 import type { SyncRawResultV2, SyncEventV2 } from '@5ss/contracts'
@@ -29,6 +30,17 @@ export function SyncGame() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isFinishedRef = useRef(false)
 
+  // Initialize SFX on mount and preload card images
+  useEffect(() => {
+    gameSfx.initOnFirstUserGesture()
+    cards.forEach((c) => {
+      if (c.displayType === 'image' && c.imageUrl) {
+        const img = new Image()
+        img.src = c.imageUrl
+      }
+    })
+  }, [cards])
+
   const submitFinal = useCallback(
     async (rawResult: SyncRawResultV2) => {
       if (!sessionId || isFinishedRef.current) return
@@ -36,6 +48,8 @@ export function SyncGame() {
       setSubmitting(true)
       setError(null)
       finalResultRef.current = rawResult
+
+      gameSfx.play('mini_complete')
 
       const res = await submitGameWithReconciliation({
         sessionId,
@@ -89,7 +103,11 @@ export function SyncGame() {
           if (timerRef.current) clearInterval(timerRef.current)
           return 0
         }
-        return prev - 1
+        const next = prev - 1
+        if (next === 2 || next === 1) {
+          gameSfx.play('timer_tick')
+        }
+        return next
       })
     }, 1000)
 
@@ -101,6 +119,7 @@ export function SyncGame() {
   // Handle timeout
   useEffect(() => {
     if (timeLeft === 0 && !submitting && !isFinishedRef.current) {
+      gameSfx.play('timer_timeout')
       finishGame(matchedPairs.size === TOTAL_PAIRS)
     }
   }, [timeLeft, submitting, matchedPairs, finishGame])
@@ -111,6 +130,8 @@ export function SyncGame() {
     const card = cards[index]
     if (!card || matchedPairs.has(card.pairId)) return
     if (flippedIndices.includes(index)) return // already face up
+
+    gameSfx.play('sync_flip')
 
     const atMs = Date.now() - gameStartRef.current
     eventsRef.current.push({
@@ -140,6 +161,8 @@ export function SyncGame() {
 
       if (isMatch) {
         // Matched!
+        gameSfx.play('sync_match')
+        gameSfx.vibrate(25)
         const nextMatched = new Set([...matchedPairs, card.pairId])
         setMatchedPairs(nextMatched)
         setFlippedIndices([])
@@ -151,7 +174,9 @@ export function SyncGame() {
           }, 500)
         }
       } else {
-        // Mismatch: lock interactions for 600ms, then flip back
+        // Mismatch: lock interactions for 600ms to allow memorization, then flip back
+        gameSfx.play('sync_mismatch')
+        gameSfx.vibrate([10, 20])
         setIsLocked(true)
         setTimeout(() => {
           setFlippedIndices([])
@@ -174,17 +199,29 @@ export function SyncGame() {
         <span className="game-progress__step">
           Đã ghép: {matchedPairs.size}/{TOTAL_PAIRS} cặp
         </span>
-        <span className={`game-progress__timer ${timeLeft <= 5 ? 'timer--urgent' : ''}`} aria-label={`Thời gian: ${timeLeft} giây`}>
+        <span
+          className={`game-progress__timer ${timeLeft <= 5 ? 'timer--urgent' : ''}`}
+          aria-label={`Thời gian: ${timeLeft} giây`}
+        >
           ⏱️ {timeLeft}s
         </span>
       </div>
 
-      <div className="game-progress-bar" role="progressbar" aria-valuenow={(matchedPairs.size / TOTAL_PAIRS) * 100} aria-valuemin={0} aria-valuemax={100}>
-        <div className="game-progress-bar__fill" style={{ width: `${(matchedPairs.size / TOTAL_PAIRS) * 100}%` }} />
+      <div
+        className="game-progress-bar"
+        role="progressbar"
+        aria-valuenow={(matchedPairs.size / TOTAL_PAIRS) * 100}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="game-progress-bar__fill"
+          style={{ width: `${(matchedPairs.size / TOTAL_PAIRS) * 100}%` }}
+        />
       </div>
 
-      <p className="sync-game__hint">
-        Tìm các cặp khái niệm hoặc biểu tượng tương đồng ngữ nghĩa (20 thẻ · 10 cặp)
+      <p className="game-micro-intro">
+        Lật tìm các cặp thẻ tương đồng ngữ nghĩa trước khi hết giờ (30s · 10 cặp)
       </p>
 
       {/* 20 Cards Grid (Responsive ~4x5 on mobile, ~5x4 on desktop) */}
@@ -207,9 +244,21 @@ export function SyncGame() {
                   <span>?</span>
                 </div>
                 <div className="sync-card__back">
-                  <span className={`sync-card__content ${c.displayType === 'emoji' ? 'content--emoji' : 'content--concept'}`}>
-                    {c.display}
-                  </span>
+                  {c.displayType === 'image' && c.imageUrl ? (
+                    <div className="sync-card__image-wrap">
+                      <img
+                        src={c.imageUrl}
+                        alt={c.display}
+                        className="sync-card__img"
+                        loading="eager"
+                        draggable={false}
+                      />
+                    </div>
+                  ) : (
+                    <span className={`sync-card__content ${c.displayType === 'emoji' ? 'content--emoji' : 'content--concept'}`}>
+                      {c.display}
+                    </span>
+                  )}
                 </div>
               </div>
             </button>

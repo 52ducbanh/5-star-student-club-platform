@@ -5,7 +5,7 @@ import { starprintApi } from '../services/starprintApi'
 
 export function GeneratingStep() {
   const reduceMotion = useReducedMotion()
-  const { sessionId, selectedColor, setStarprint, setStep } = useStarprintStore()
+  const { sessionId, selectedColor, photoPreviewUrl, setStarprint, setStep } = useStarprintStore()
   const [error, setError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const called = useRef(false)
@@ -19,7 +19,11 @@ export function GeneratingStep() {
     setGenerating(true)
     try {
       const data = await starprintApi.generateStarprint({ sessionId, baseColor: selectedColor })
-      setStarprint(data)
+      const finalData = {
+        ...data,
+        photoUrl: data.photoUrl || photoPreviewUrl || null,
+      }
+      setStarprint(finalData)
       setStep('FINAL_REVEAL')
     } catch {
       setError('Không thể tạo STARPRINT do lỗi kết nối hoặc phiên hết hạn.')

@@ -7,7 +7,7 @@ export const siteConfig = {
   logoSrc: '/assets/sv5t-mark.png?v=2' as string | null,
   emailDomain: null as string | null,
   demoMode: true,
-  recruitmentUrl: null as string | null,
+  recruitmentUrl: 'https://forms.gle/Rhh1XmwhFxBE1m6q8' as string | null,
 } as const
 
 export interface RouteNavItem {
@@ -37,8 +37,7 @@ export const aboutNavigation: AnchorNavItem = {
 export const primaryNavigation: readonly RouteNavItem[] = [
   { type: 'route', label: 'Hành trình 5 Tốt', href: '/hanh-trinh-5-tot' },
   { type: 'route', label: 'Hoạt động', href: '/hoat-dong' },
-  { type: 'route', label: 'Tạo STARPRINT ✨', href: '/starprint' },
-  { type: 'route', label: '5SS Sky 🌌', href: '/sky' },
+  { type: 'route', label: '5SS Sky', href: '/sky' },
 ] as const
 
 /** Explore dropdown navigation (Home secondary section anchors) */
