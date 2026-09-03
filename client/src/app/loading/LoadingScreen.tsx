@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { motion } from 'motion/react'
 import { LoadingStarPentagon } from './LoadingStarPentagon'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { useLoading } from '@/app/providers/LoadingProvider'
+import { useLoading } from '@/app/providers/loadingContext'
 import { Sparkles } from 'lucide-react'
 
 const MIN_INTRO_DURATION_DEFAULT = 900

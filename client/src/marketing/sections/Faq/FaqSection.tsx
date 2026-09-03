@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ScrollReveal, StaggerContainer, staggerItem, framerEase } from '@/shared/components/ScrollReveal'
+import { ScrollReveal, StaggerContainer } from '@/shared/components/ScrollReveal'
+import { staggerItem, framerEase } from '@/shared/components/scrollRevealVariants'
 import { faqItems } from '@/marketing/data/faq'
 
 const FAQ_PREVIEW_COUNT = 5

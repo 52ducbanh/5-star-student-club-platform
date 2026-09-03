@@ -30,7 +30,7 @@ export function JourneyMap() {
   useEffect(() => {
     const criterionParam = searchParams.get('criterion')
     if (criterionParam && journeyCriteria.some((c) => c.id === criterionParam)) {
-      setSelectedId(criterionParam)
+      setSelectedId((prev) => (prev !== criterionParam ? criterionParam : prev))
     }
   }, [searchParams])
 

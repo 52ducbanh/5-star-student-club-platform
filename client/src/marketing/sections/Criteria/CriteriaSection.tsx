@@ -12,7 +12,8 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router-dom'
-import { ScrollReveal, framerEase } from '@/shared/components/ScrollReveal'
+import { ScrollReveal } from '@/shared/components/ScrollReveal'
+import { framerEase } from '@/shared/components/scrollRevealVariants'
 import { journeyCriteria } from '@/features/journey/data/journey'
 
 const Criteria3DScene = lazy(() =>

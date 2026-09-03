@@ -3,7 +3,8 @@ import { AlertCircle, ArrowRight, Calendar, Loader2, Sparkles } from 'lucide-rea
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import type { NewsItem } from '@5ss/contracts'
-import { ScrollReveal, StaggerContainer, staggerItem } from '@/shared/components/ScrollReveal'
+import { ScrollReveal, StaggerContainer } from '@/shared/components/ScrollReveal'
+import { staggerItem } from '@/shared/components/scrollRevealVariants'
 import { formatDisplayDate } from '@/shared/utils/formatDate'
 import { activitiesApi } from '@/features/activities/services/activitiesApi'
 import { sortNews } from '@/features/activities/utils/activitySorting'
@@ -14,8 +15,8 @@ export function ActivitiesSection() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadNews = useCallback(() => {
-    setLoading(true)
+  const loadNews = useCallback((isInitial = false) => {
+    if (!isInitial) setLoading(true)
     setError(null)
     activitiesApi.fetchNews()
       .then((items) => {
@@ -30,7 +31,7 @@ export function ActivitiesSection() {
   }, [])
 
   useEffect(() => {
-    loadNews()
+    loadNews(true)
   }, [loadNews])
 
   const featuredItem = news[0]
@@ -66,7 +67,7 @@ export function ActivitiesSection() {
               type="button"
               className="btn btn--outline"
               style={{ marginTop: '12px' }}
-              onClick={loadNews}
+              onClick={() => loadNews()}
             >
               Thử lại
             </button>

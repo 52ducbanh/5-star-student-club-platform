@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, lazy, Suspense, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { useReducedMotion } from "motion/react"
 import { starprintApi } from "../services/starprintApi"
-import { normalizeMediaUrl } from "@/shared/services/http/apiClient"
+import { normalizeMediaUrl, getSocketBaseUrl } from "@/shared/services/http/apiClient"
 import { AccessibleModal } from "@/shared/components/AccessibleModal"
 import type { SkyStar } from "../types/api.types"
 
@@ -22,8 +22,10 @@ export default function SkyPage() {
     document.title = "5SS Sky | 5SS UET"
   }, [])
 
-  const fetchSky = useCallback(async () => {
-    setLoading(true)
+  const fetchSky = useCallback(async (isInitial = false) => {
+    if (!isInitial) {
+      setLoading(true)
+    }
     setError(null)
     try {
       const data = await starprintApi.getSky()
@@ -41,16 +43,18 @@ export default function SkyPage() {
 
   useEffect(() => {
     isMountedRef.current = true
-    void fetchSky()
+    void fetchSky(true)
 
-    const apiUrl = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:3000/api"
-    const socketUrl = apiUrl.replace(/\/api\/?$/, "")
+    const socketUrl = getSocketBaseUrl()
     let socketInstance: any = null
 
     import("socket.io-client")
       .then(({ io }) => {
         if (!isMountedRef.current) return
-        socketInstance = io(socketUrl, { transports: ["websocket"] })
+        socketInstance = io(socketUrl, {
+          transports: ["websocket", "polling"],
+          timeout: 10000,
+        })
         socketInstance.on("connect", () => {
           if (isMountedRef.current) setConnected(true)
         })
@@ -86,7 +90,7 @@ export default function SkyPage() {
       return (
         <div className="game-error">
           <p className="field-error">{error}</p>
-          <button className="btn btn--primary" onClick={fetchSky}>
+          <button className="btn btn--primary" onClick={() => void fetchSky()}>
             Thử tải lại 🔄
           </button>
         </div>

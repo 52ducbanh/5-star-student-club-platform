@@ -7,6 +7,10 @@ import { DomainErrorCode } from '../../common/exceptions/domain-error.enum';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const sharp: typeof sharpType = require('sharp');
 
+// Limit Sharp thread concurrency and disable buffer caching to avoid memory/CPU spikes
+sharp.concurrency(2);
+sharp.cache(false);
+
 @Injectable()
 export class UploadsService {
   constructor(private readonly storage: LocalMediaStorage) {}

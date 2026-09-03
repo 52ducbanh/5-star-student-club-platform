@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useStarprintStore } from '../store/useStarprintStore'
 import { gameSfx } from '../services/gameSfx'
 import type { StarprintStep } from '../types/game.types'
@@ -14,10 +14,6 @@ const MINI_GAMES: { step: StarprintStep; label: string; icon: string }[] = [
 export function ConstellationNav() {
   const { currentStep } = useStarprintStore()
   const [muted, setMuted] = useState(gameSfx.isMuted())
-
-  useEffect(() => {
-    setMuted(gameSfx.isMuted())
-  }, [])
 
   const handleToggleSound = () => {
     const next = gameSfx.toggleMute()

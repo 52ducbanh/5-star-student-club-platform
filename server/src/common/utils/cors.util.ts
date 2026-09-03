@@ -1,4 +1,4 @@
-﻿export function buildCorsOriginMatcher(configuredOrigin?: string) {
+export function buildCorsOriginMatcher(configuredOrigin?: string) {
   const configured = (configuredOrigin || 'http://localhost:5173')
     .split(',')
     .map((o) => o.trim())
@@ -24,6 +24,9 @@
         if (
           host === 'localhost' ||
           host === '127.0.0.1' ||
+          host.endsWith('.vercel.app') ||
+          host.endsWith('.ngrok-free.app') ||
+          host.endsWith('.ngrok-free.dev') ||
           /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
           /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
           /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)

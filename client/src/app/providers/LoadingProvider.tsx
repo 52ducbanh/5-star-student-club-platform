@@ -1,18 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
-
-interface LoadingContextType {
-  isLoaded: boolean
-  isExiting: boolean
-  startHeroReveal: () => void
-  completeLoading: () => void
-}
-
-const LoadingContext = createContext<LoadingContextType>({
-  isLoaded: false,
-  isExiting: false,
-  startHeroReveal: () => {},
-  completeLoading: () => {},
-})
+import { useState, type ReactNode } from 'react'
+import { LoadingContext } from './loadingContext'
 
 export function LoadingProvider({ children }: { children: ReactNode }) {
   const [isExiting, setIsExiting] = useState(false)
@@ -39,8 +26,4 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
       {children}
     </LoadingContext.Provider>
   )
-}
-
-export function useLoading() {
-  return useContext(LoadingContext)
 }

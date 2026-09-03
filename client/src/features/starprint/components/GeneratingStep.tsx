@@ -30,7 +30,7 @@ export function GeneratingStep() {
     } finally {
       setGenerating(false)
     }
-  }, [sessionId, selectedColor, setStarprint, setStep])
+  }, [sessionId, selectedColor, photoPreviewUrl, setStarprint, setStep])
 
   useEffect(() => {
     if (called.current) return

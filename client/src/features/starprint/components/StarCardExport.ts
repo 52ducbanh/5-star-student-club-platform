@@ -13,7 +13,12 @@ async function toDataUrl(url: string): Promise<string> {
     return url
   }
   try {
-    const res = await fetch(url, { mode: 'cors' })
+    const res = await fetch(url, {
+      mode: 'cors',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const blob = await res.blob()
     return await new Promise<string>((resolve, reject) => {

@@ -13,6 +13,63 @@ function checkHasMediaDevices(): boolean {
   return typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia)
 }
 
+/**
+ * Downscale and compress image client-side to max 1024x1024 JPEG before uploading.
+ * Reduces 5MB gallery uploads down to ~80-150KB to preserve bandwidth and server RAM under 100 CCU.
+ */
+async function compressImageBeforeUpload(fileOrBlob: Blob | File): Promise<Blob> {
+  if (fileOrBlob.size < 150 * 1024 && (fileOrBlob.type === 'image/jpeg' || fileOrBlob.type === 'image/webp')) {
+    return fileOrBlob
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(fileOrBlob)
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      const maxDimension = 1024
+      let width = img.naturalWidth || img.width
+      let height = img.naturalHeight || img.height
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width)
+          width = maxDimension
+        } else {
+          width = Math.round((width * maxDimension) / height)
+          height = maxDimension
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(fileOrBlob)
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob || fileOrBlob)
+        },
+        'image/jpeg',
+        0.85
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(fileOrBlob)
+    }
+
+    img.src = objectUrl
+  })
+}
+
 export function CameraStep() {
   const [view, setView] = useState<CameraStepView>('choose')
   const [photoSource, setPhotoSource] = useState<PhotoSource | null>(null)
@@ -236,7 +293,8 @@ export function CameraStep() {
     setUploadError(null)
 
     try {
-      const { photoUrl } = await starprintApi.uploadPhoto(sessionId, capturedBlobOrFile)
+      const optimizedBlob = await compressImageBeforeUpload(capturedBlobOrFile)
+      const { photoUrl } = await starprintApi.uploadPhoto(sessionId, optimizedBlob)
       setPhotoPreviewUrl(photoUrl)
 
       if (previewUrlRef.current) {

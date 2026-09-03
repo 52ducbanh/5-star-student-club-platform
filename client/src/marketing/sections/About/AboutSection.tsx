@@ -1,7 +1,8 @@
 import { Compass, HeartHandshake, Rocket, Sparkles, Target, Quote } from 'lucide-react'
 import { motion } from 'motion/react'
 import { MediaPlaceholder } from '@/shared/components/MediaPlaceholder'
-import { ScrollReveal, StaggerContainer, staggerItem } from '@/shared/components/ScrollReveal'
+import { ScrollReveal, StaggerContainer } from '@/shared/components/ScrollReveal'
+import { staggerItem } from '@/shared/components/scrollRevealVariants'
 import { aboutContent } from '@/marketing/data/about'
 
 const valueIcons = [HeartHandshake, Compass, Rocket, Sparkles]

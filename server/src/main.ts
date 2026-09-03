@@ -30,9 +30,12 @@ async function bootstrap() {
   app.use(
     '/uploads',
     express.static(join(process.cwd(), uploadDir), {
+      maxAge: '7d',
+      immutable: true,
       setHeaders: (res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
       },
     }),
   );

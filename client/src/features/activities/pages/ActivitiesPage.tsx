@@ -1,39 +1,15 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { AlertCircle, CalendarDays, Clock3, ExternalLink, Loader2, MapPin, Newspaper, Sparkles, TicketCheck } from 'lucide-react'
+import { AlertCircle, CalendarDays, Loader2, Newspaper, Sparkles } from 'lucide-react'
 import type { EventItem, DerivedEventStatus, NewsItem } from '@5ss/contracts'
-import { AccessibleModal } from '@/shared/components/AccessibleModal'
-import { MediaPlaceholder } from '@/shared/components/MediaPlaceholder'
 import { PageIntro } from '@/shared/components/PageIntro'
 import { ScrollReveal } from '@/shared/components/ScrollReveal'
-import { formatDisplayDate, formatTimeRange } from '@/shared/utils/formatDate'
 import { activitiesApi } from '../services/activitiesApi'
-import { RegistrationForm } from '../RegistrationForm'
 import { NewsCard } from '../components/NewsCard'
 import { EventCard } from '../components/EventCard'
+import { NewsDetailModal } from '../components/NewsDetailModal'
+import { EventDetailModal } from '../components/EventDetailModal'
 import { sortNews, sortEvents } from '../utils/activitySorting'
-
-function renderParagraphWithLinks(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g
-  const parts = text.split(urlRegex)
-  return parts.map((part, i) => {
-    if (part.match(urlRegex)) {
-      return (
-        <a
-          key={i}
-          href={part}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[#5eafe8] underline hover:text-[#90cdf4]"
-          style={{ wordBreak: 'break-all' }}
-        >
-          {part}
-        </a>
-      )
-    }
-    return part
-  })
-}
 
 type ActivityTab = 'news' | 'events'
 type EventFilter = 'all' | DerivedEventStatus
@@ -102,9 +78,9 @@ export function ActivitiesPage() {
   // Synchronize modal state with URL query param ?item=<slug>
   useEffect(() => {
     if (!itemSlug) {
-      setNewsDetail(null)
-      setEventDetail(null)
-      setRegistering(false)
+      setNewsDetail((prev) => (prev !== null ? null : prev))
+      setEventDetail((prev) => (prev !== null ? null : prev))
+      setRegistering((prev) => (prev ? false : prev))
       return
     }
 
@@ -494,100 +470,20 @@ export function ActivitiesPage() {
       </div>
 
       {/* News detail modal */}
-      <AccessibleModal
-        open={Boolean(newsDetail && !eventDetail)}
+      <NewsDetailModal
+        news={newsDetail}
+        isOpen={Boolean(newsDetail && !eventDetail)}
         onClose={closeNews}
-        title={newsDetail?.title ?? 'Chi tiết tin tức'}
-        size="large"
-      >
-        {newsDetail && (
-          <article className="detail-article">
-            <MediaPlaceholder
-              src={newsDetail.imageUrl}
-              alt={`Ảnh bìa: ${newsDetail.title}`}
-              variant="violet"
-              label="Ảnh bài viết"
-            />
-            <div className="detail-article__meta">
-              <span>{newsDetail.tag}</span>
-              <time>{formatDisplayDate(newsDetail.publishedAt)}</time>
-            </div>
-            {newsDetail.body.map((p, idx) => <p key={idx}>{renderParagraphWithLinks(p)}</p>)}
-          </article>
-        )}
-      </AccessibleModal>
+      />
 
       {/* Event detail modal */}
-      <AccessibleModal
-        open={Boolean(eventDetail && !newsDetail)}
+      <EventDetailModal
+        event={eventDetail}
+        isOpen={Boolean(eventDetail && !newsDetail)}
         onClose={closeEvent}
-        title={registering ? 'Đăng ký tham gia sự kiện' : eventDetail?.title ?? 'Chi tiết sự kiện'}
-        size="large"
-      >
-        {eventDetail && (registering ? (
-          <RegistrationForm
-            eventId={eventDetail.id}
-            eventTitle={eventDetail.title}
-            onDone={closeEvent}
-          />
-        ) : (
-          <article className="detail-article event-detail">
-            <MediaPlaceholder
-              src={eventDetail.imageUrl}
-              alt={`Ảnh sự kiện: ${eventDetail.title}`}
-              variant="cyan"
-              label="Ảnh sự kiện"
-            />
-            <span className={`status-badge status-badge--${eventDetail.status}`}>
-              {eventDetail.status === 'upcoming' ? '● Sắp diễn ra' : '○ Đã kết thúc'}
-            </span>
-            <div className="event-detail__meta">
-              <span><CalendarDays size={15} /> {formatDisplayDate(eventDetail.startAt)}</span>
-              <span><Clock3 size={15} /> {formatTimeRange(eventDetail.startAt, eventDetail.endAt)}</span>
-              <span><MapPin size={15} /> {eventDetail.location}</span>
-            </div>
-            {eventDetail.body.map((p, idx) => <p key={idx}>{renderParagraphWithLinks(p)}</p>)}
-            {(() => {
-              const googleFormLine = eventDetail.body.find(
-                (p) => p.includes('docs.google.com/forms') || p.includes('forms.gle'),
-              )
-              const formMatch = googleFormLine?.match(/https?:\/\/[^\s]+/)
-              const formUrl = formMatch ? formMatch[0] : null
-
-              if (formUrl) {
-                return (
-                  <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <a
-                      href={formUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn--primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                    >
-                      <ExternalLink size={16} /> Đăng ký qua Google Form ↗
-                    </a>
-                  </div>
-                )
-              }
-
-              if (eventDetail.registrationAvailable) {
-                return (
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={() => setRegistering(true)}
-                    style={{ marginTop: '8px' }}
-                  >
-                    <TicketCheck size={16} /> Đăng ký tham gia
-                  </button>
-                )
-              }
-
-              return null
-            })()}
-          </article>
-        ))}
-      </AccessibleModal>
+        registering={registering}
+        onStartRegistering={() => setRegistering(true)}
+      />
     </main>
   )
 }

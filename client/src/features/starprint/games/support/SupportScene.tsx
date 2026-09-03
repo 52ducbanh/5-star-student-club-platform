@@ -142,21 +142,24 @@ export function SupportScene({
     [],
   )
 
-  // Stable swipe cutter instance
+  // Lazy swipe cutter accessor
   const cutterRef = useRef<SwipeCutter | null>(null)
-  if (!cutterRef.current) {
-    cutterRef.current = new SwipeCutter({
-      getSvgElement: () => svgRef.current,
-      getActiveRopes: () =>
-        levelRef.current.ropes.filter((r) => attachedRopesRef.current.includes(r.ropeId)),
-      getObjectPosition: () => objectPosRef.current,
-      onCutRope: (ropeId, cutPoint) => handleCut(ropeId, cutPoint),
-      onTrailUpdate: (pts) => setTrailPoints([...pts]),
-    })
-  }
+  const getCutter = useCallback(() => {
+    if (!cutterRef.current) {
+      cutterRef.current = new SwipeCutter({
+        getSvgElement: () => svgRef.current,
+        getActiveRopes: () =>
+          levelRef.current.ropes.filter((r) => attachedRopesRef.current.includes(r.ropeId)),
+        getObjectPosition: () => objectPosRef.current,
+        onCutRope: (ropeId, cutPoint) => handleCut(ropeId, cutPoint),
+        onTrailUpdate: (pts) => setTrailPoints([...pts]),
+      })
+    }
+    return cutterRef.current
+  }, [handleCut])
 
   // Continuous rAF animation loop for deterministic motion
-  const [currentTimestamp, setCurrentTimestamp] = useState<number>(performance.now())
+  const [currentTimestamp, setCurrentTimestamp] = useState<number>(0)
 
   useEffect(() => {
     let rafId: number
@@ -236,10 +239,10 @@ export function SupportScene({
         viewBox="0 0 100 100"
         className="support-svg-stage"
         aria-label="Khu vực cắt dây hỗ trợ đưa ngôi sao về đích"
-        onPointerDown={(e) => cutterRef.current?.handlePointerDown(e)}
-        onPointerMove={(e) => cutterRef.current?.handlePointerMove(e)}
-        onPointerUp={(e) => cutterRef.current?.handlePointerUp(e)}
-        onPointerCancel={(e) => cutterRef.current?.handlePointerCancel(e)}
+        onPointerDown={(e) => getCutter().handlePointerDown(e)}
+        onPointerMove={(e) => getCutter().handlePointerMove(e)}
+        onPointerUp={(e) => getCutter().handlePointerUp(e)}
+        onPointerCancel={(e) => getCutter().handlePointerCancel(e)}
       >
         <defs>
           <radialGradient id="target-glow" cx="50%" cy="50%" r="50%">

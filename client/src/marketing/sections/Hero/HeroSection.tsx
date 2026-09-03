@@ -4,15 +4,15 @@ import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { siteConfig } from '@/config/site'
 import { journeyCriteria } from '@/features/journey/data/journey'
-import { useLoading } from '@/app/providers/LoadingProvider'
+import { useLoading } from '@/app/providers/loadingContext'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { framerEase } from '@/shared/components/scrollRevealVariants'
 
 const HeroGalaxyScene = lazy(() =>
   import('@/three/marketing/HeroGalaxyScene').then((m) => ({ default: m.HeroGalaxyScene })),
 )
 
 const criterionIcons = [HeartHandshake, BookOpenCheck, Dumbbell, HandHeart, Languages]
-const framerEase = [0.16, 1, 0.3, 1] as const
 
 export function HeroSection() {
   const { isExiting, isLoaded } = useLoading()

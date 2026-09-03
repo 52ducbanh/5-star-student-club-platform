@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { LoadingScreen } from '@/app/loading/LoadingScreen'
-import { useLoading } from '@/app/providers/LoadingProvider'
+import { useLoading } from '@/app/providers/loadingContext'
 import { GameShell } from '@/app/shells/GameShell'
 import { MarketingShell } from '@/app/shells/MarketingShell'
 import { ActivitiesPage } from '@/features/activities/pages/ActivitiesPage'

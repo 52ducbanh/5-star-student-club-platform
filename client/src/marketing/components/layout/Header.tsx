@@ -16,7 +16,7 @@ import {
   exploreNavigation,
   headerCta,
 } from '@/config/site'
-import { useLoading } from '@/app/providers/LoadingProvider'
+import { useLoading } from '@/app/providers/loadingContext'
 import { navigateToSection, navigateToHomeTop } from '@/shared/utils/navigation'
 
 export function Header() {
@@ -24,28 +24,32 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string | null>(null)
+  const location = useLocation()
+  const lastPathnameRef = useRef(location.pathname)
+  const reduceMotion = useReducedMotion()
 
   const mobileBtnRef = useRef<HTMLButtonElement>(null)
   const exploreBtnRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const reduceMotion = useReducedMotion()
   const navigate = useNavigate()
-  const location = useLocation()
 
   const isRevealed = isExiting || isLoaded || reduceMotion
   const isHome = location.pathname === '/'
 
   // Close menus on route change
   useEffect(() => {
-    setMenuOpen(false)
-    setExploreOpen(false)
+    if (lastPathnameRef.current !== location.pathname) {
+      lastPathnameRef.current = location.pathname
+      setMenuOpen(false)
+      setExploreOpen(false)
+    }
   }, [location.pathname])
 
   // Lightweight IntersectionObserver Section Spy on Home (Visual only, NO history pushing)
   useEffect(() => {
     if (!isHome) {
-      setActiveSection(null)
+      setActiveSection((prev) => (prev !== null ? null : prev))
       return
     }
 

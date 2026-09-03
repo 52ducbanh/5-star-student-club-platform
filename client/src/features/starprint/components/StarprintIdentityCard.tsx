@@ -42,14 +42,14 @@ const ARCHETYPE_ENGLISH_TAGLINES: Record<string, string> = {
   VISIONARY: 'Shape tomorrow today.',
 }
 
-export function compactTypeName(typeName: string): string {
+function compactTypeName(typeName: string): string {
   const clean = typeName.split('(')[0]?.trim() || typeName
   const normalizedKey = clean.toUpperCase().replace(/^THE\s+/i, '').trim()
   const baseName = VIETNAMESE_TO_ENGLISH_STAR_TYPES[normalizedKey] || normalizedKey
   return `THE ${baseName}`
 }
 
-export function compactStarId(starId: string): string {
+function compactStarId(starId: string): string {
   if (starId.startsWith('STAR-') || starId.startsWith('5SS-')) {
     return starId
   }

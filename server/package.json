@@ -11,7 +11,8 @@
                     "test":  "jest",
                     "migration:generate":  "typeorm migration:generate -d dist/database/data-source.js",
                     "migration:run":  "typeorm migration:run -d dist/database/data-source.js",
-                    "seed:dev":  "node dist/database/seeds/dev-seed.js"
+                    "seed:dev":  "node dist/database/seeds/dev-seed.js",
+                    "clean:minigames": "node dist/database/seeds/clean-minigames.js"
                 },
     "dependencies":  {
                          "@5ss/contracts":  "*",

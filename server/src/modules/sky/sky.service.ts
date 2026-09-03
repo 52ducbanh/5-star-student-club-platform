@@ -24,18 +24,36 @@ export function mapStarprintToSkyStar(
 
 @Injectable()
 export class SkyService {
+  private cachedStars: SkyStar[] | null = null;
+  private cacheExpiresAt = 0;
+  private readonly CACHE_TTL_MS = 5000; // 5 seconds in-memory cache
+
   constructor(
     @InjectRepository(Starprint)
     private readonly starprintRepository: Repository<Starprint>,
   ) {}
 
+  invalidateCache(): void {
+    this.cachedStars = null;
+    this.cacheExpiresAt = 0;
+  }
+
   async getPublicStars(): Promise<SkyStar[]> {
+    const now = Date.now();
+    if (this.cachedStars && now < this.cacheExpiresAt) {
+      return this.cachedStars;
+    }
+
     const starprints = await this.starprintRepository.find({
       where: { isPublic: true },
       relations: ['session'],
       order: { createdAt: 'DESC' },
+      take: 200,
     });
 
-    return starprints.map((sp) => mapStarprintToSkyStar(sp));
+    const stars = starprints.map((sp) => mapStarprintToSkyStar(sp));
+    this.cachedStars = stars;
+    this.cacheExpiresAt = now + this.CACHE_TTL_MS;
+    return stars;
   }
 }

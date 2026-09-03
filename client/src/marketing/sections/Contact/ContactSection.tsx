@@ -1,6 +1,7 @@
 import { Mail, MapPin, MessageCircle, Music2, Phone, Send, Sparkles } from 'lucide-react'
 import { motion } from 'motion/react'
-import { ScrollReveal, StaggerContainer, staggerItem } from '@/shared/components/ScrollReveal'
+import { ScrollReveal, StaggerContainer } from '@/shared/components/ScrollReveal'
+import { staggerItem } from '@/shared/components/scrollRevealVariants'
 import { ContactForm } from '@/features/forms/ContactForm'
 import { contactConfig } from '@/config/contact'
 
