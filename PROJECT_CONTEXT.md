@@ -700,6 +700,8 @@ To ensure the server and client withstand 100 concurrent players without connect
 4. **Static Media Caching (`main.ts`):** Express `/uploads` route sets `maxAge: '7d'`, `immutable: true` with `Cache-Control: public, max-age=604800, immutable` headers so browser clients cache avatars.
 5. **Client HTTP Resilience (`apiClient.ts`):** Configured 15s timeout (`AbortSignal.timeout(15000)`) with automatic exponential backoff retry (up to 2 retries with jitter) for idempotent `GET` operations encountering transient network drops or 502/503/504 gateway spikes.
 6. **Remote Tunnel & Vercel Preview Support:** `apiClient.ts` and `StarCardExport.ts` include `'ngrok-skip-browser-warning': 'true'` to bypass ngrok interstitial warning pages on dev domains. `server/src/common/utils/cors.util.ts` permits `*.vercel.app`, `*.ngrok-free.app`, and `*.ngrok-free.dev` origins during development. Root `vercel.json` ensures SPA client-side routing rewrites for Vercel monorepo builds.
+7. **Student-Named Media Storage & Card Export (`local-media-storage.ts`, `StarCardExport.ts`):** `UploadsController` passes `session.nickname` to `UploadsService` and `LocalMediaStorage`, saving avatar photos using sanitized Vietnamese names (`<slugified-name>-<short-uuid>.webp`) into `server/uploads/` instead of raw UUIDs. Client export `StarCardExport.ts` formats download filenames as `star-card-<slugified-name>-<publicId>.png`.
+
 
 ### Full Project Refactor & React 19 Conformance (Completed)
 

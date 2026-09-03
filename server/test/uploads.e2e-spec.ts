@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -97,7 +97,8 @@ describe('Photo Upload & Persistence (e2e)', () => {
       .expect(200);
 
     expect(res.body.photoUrl).toBeDefined();
-    expect(res.body.photoUrl).toMatch(/^\/uploads\/[0-9a-f-]+\.webp$/);
+    expect(res.body.photoUrl).toMatch(/^\/uploads\/[a-z0-9-]+\.webp$/);
+    expect(res.body.photoUrl).toContain('phototestuser');
 
     // Verify session in database has updated photoUrl
     const sessionRes = await request(app.getHttpServer())

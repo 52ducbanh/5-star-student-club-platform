@@ -60,9 +60,9 @@ export class UploadsController {
     }
 
     // Verify session exists
-    await this.sessionsService.findOne(sessionId);
+    const session = await this.sessionsService.findOne(sessionId);
 
-    const photoUrl = await this.uploadsService.processAndSaveImage(file);
+    const photoUrl = await this.uploadsService.processAndSaveImage(file, session?.nickname);
     await this.sessionsService.updatePhoto(sessionId, photoUrl);
 
     return { photoUrl };

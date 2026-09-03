@@ -119,9 +119,17 @@ export async function exportStarCardToPng(starprint: StarCardData): Promise<void
       height: 943,
     })
 
-    // 5. Trigger download with canonical filename
+    // 5. Trigger download with canonical filename including student nickname
     const publicId = starprint.publicStarId || starprint.id
-    const filename = `star-card-${publicId}.png`
+    const safeNickname = (starprint.nickname || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[đĐ]/g, 'd')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    const filename = safeNickname ? `star-card-${safeNickname}-${publicId}.png` : `star-card-${publicId}.png`
     const downloadLink = document.createElement('a')
     downloadLink.download = filename
     downloadLink.href = dataUrl

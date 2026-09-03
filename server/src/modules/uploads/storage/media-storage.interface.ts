@@ -1,3 +1,3 @@
 export interface MediaStorage {
-  saveFile(buffer: Buffer, originalName: string): Promise<string>;
+  saveFile(buffer: Buffer, identifier?: string): Promise<string>;
 }
