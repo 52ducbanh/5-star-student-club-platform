@@ -87,6 +87,10 @@ describe('P1 Authorization & P2 Sky Payload Verification', () => {
         {} as any,
         { emitStarCreated: jest.fn() } as any,
         {} as any,
+        {
+          savePrintCardImage: jest.fn(),
+          deleteCardImageByStarId: jest.fn(),
+        } as any,
       );
     });
 

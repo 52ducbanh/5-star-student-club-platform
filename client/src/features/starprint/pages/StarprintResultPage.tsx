@@ -1,11 +1,11 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useLocation, Link, useNavigate } from "react-router-dom"
 import { starprintApi } from "../services/starprintApi"
 import { useStarprintStore } from "../store/useStarprintStore"
 import { ApiError } from "@/shared/services/http/apiClient"
 import type { StarprintRenderData } from "../types/api.types"
 import { StarCard } from "../components/StarCard"
-import { exportStarCardToPng } from "../components/StarCardExport"
+import { exportStarCardToPng, autoUploadStarCardPrintImage } from "../components/StarCardExport"
 import { PublishConsent } from "../components/PublishConsent"
 
 interface StarprintResultPageProps {
@@ -24,6 +24,7 @@ export default function StarprintResultPage({ readOnly }: StarprintResultPagePro
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const uploadedStarsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     document.title = isPublicView ? "STAR CARD | 5SS UET" : "STARPRINT Kết Quả | 5SS UET"
@@ -53,6 +54,52 @@ export default function StarprintResultPage({ readOnly }: StarprintResultPagePro
   useEffect(() => {
     void fetchStarprint()
   }, [fetchStarprint])
+
+  // Non-blocking background auto-upload for physical printing pipeline
+  useEffect(() => {
+    if (!starprint || isPublicView) return
+    // Client optimization: skip if explicitly opted out of physical card
+    if (starprint.physicalCardRequested === false) return
+
+    const effectiveSessionId = starprint.sessionId || storeSessionId
+    if (!effectiveSessionId) return
+
+    const starId = starprint.id
+    if (uploadedStarsRef.current.has(starId)) return
+    uploadedStarsRef.current.add(starId)
+
+    const timer = setTimeout(() => {
+      const scheduleWork =
+        typeof window !== 'undefined' && 'requestIdleCallback' in window
+          ? (cb: () => void) => (window as any).requestIdleCallback(cb, { timeout: 1500 })
+          : (cb: () => void) => setTimeout(cb, 100)
+
+      scheduleWork(() => {
+        void autoUploadStarCardPrintImage({
+          ...starprint,
+          sessionId: effectiveSessionId,
+        }).catch((err) => {
+          console.warn('[StarprintResultPage] Background card auto-upload error:', err)
+        })
+      })
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [starprint, isPublicView, storeSessionId])
+
+  const handlePreferencesSaved = (physicalCardRequested: boolean) => {
+    setStarprint((prev) => (prev ? { ...prev, physicalCardRequested } : prev))
+    if (physicalCardRequested && starprint) {
+      const effectiveSessionId = starprint.sessionId || storeSessionId
+      if (effectiveSessionId) {
+        void autoUploadStarCardPrintImage({
+          ...starprint,
+          physicalCardRequested: true,
+          sessionId: effectiveSessionId,
+        }).catch(() => {})
+      }
+    }
+  }
 
   const handleCreateNew = () => {
     reset()
@@ -178,6 +225,7 @@ export default function StarprintResultPage({ readOnly }: StarprintResultPagePro
                 sessionId={starprint.sessionId || storeSessionId || ''}
                 initialPhysicalCard={starprint.physicalCardRequested}
                 initialMediaPermission={starprint.mediaPermission}
+                onPreferencesSaved={handlePreferencesSaved}
               />
             )
           )}

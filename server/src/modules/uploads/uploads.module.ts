@@ -8,5 +8,6 @@ import { SessionsModule } from '../sessions/sessions.module';
   imports: [SessionsModule],
   controllers: [UploadsController],
   providers: [UploadsService, LocalMediaStorage],
+  exports: [UploadsService, LocalMediaStorage],
 })
 export class UploadsModule {}

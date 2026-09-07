@@ -6,6 +6,7 @@ interface Props {
   sessionId?: string
   initialPhysicalCard?: boolean
   initialMediaPermission?: boolean
+  onPreferencesSaved?: (physicalCardRequested: boolean) => void
 }
 
 export function PublishConsent({
@@ -13,6 +14,7 @@ export function PublishConsent({
   sessionId,
   initialPhysicalCard = true,
   initialMediaPermission = true,
+  onPreferencesSaved,
 }: Props) {
   const [physicalCardRequested, setPhysicalCardRequested] = useState(initialPhysicalCard)
   const [mediaPermission, setMediaPermission] = useState(
@@ -47,6 +49,7 @@ export function PublishConsent({
         mediaPermission: physicalCardRequested ? true : mediaPermission,
       })
       setSaved(true)
+      onPreferencesSaved?.(physicalCardRequested)
       setTimeout(() => setSaved(false), 3000)
     } catch {
       setError('Không thể cập nhật tùy chọn. Vui lòng thử lại.')

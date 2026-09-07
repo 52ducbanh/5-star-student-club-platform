@@ -8,13 +8,15 @@ import { PaletteEngine } from './domain/palette-engine';
 import { GamesModule } from '../games/games.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { SkyModule } from '../sky/sky.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Starprint]),
     GamesModule,
     SessionsModule,
-    SkyModule
+    SkyModule,
+    UploadsModule,
   ],
   controllers: [StarprintsController],
   providers: [StarprintsService, TypeEngine, PaletteEngine],

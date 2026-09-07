@@ -720,6 +720,18 @@ A careful, production-quality refactor was performed across the monorepo strictl
    - Removed redundant `useEffect` in `ConstellationNav.tsx` and guarded route/query effects in `Header.tsx`, `JourneyMap.tsx`, `ActivitiesPage.tsx`, and `ActivitiesSection.tsx`.
    - Preserved intentional game timestamp instantiation refs (`useRef(Date.now())`) in mini-games to maintain millisecond-exact game engine physics and scoring rules.
 
+### COMPLETED: AUTONOMOUS STAR CARD PRINT PIPELINE (EVENT OPERATIONS READY)
+
+The event printing pipeline has been implemented end-to-end to support physical card production at the conclusion of 5SS events:
+1. **Print Folder Authority:** `server/uploads/cards/` is strictly reserved for physical printing. Only starprints with `physicalCardRequested === true` are saved into the folder. Opting out or updating preferences to `false` purges existing print assets for that Star ID.
+2. **One Visual Source of Truth:** Visible `StarCard`, manual PNG export (`exportStarCardToPng`), and background server print upload share `renderStarCardToBlob` in `StarCardExport.ts`.
+3. **Canonical Print Geometry:** Exactly 1200×1886 PNG (rendered off-screen at 600×943 @2x pixel ratio).
+4. **Non-Blocking Background Auto-Save:** Result page paints instantly without blocking. The background capture and upload is scheduled 400ms after interactive paint using `requestIdleCallback` with bounded exponential retries.
+5. **Session & Mutation Security:** Reuses the strict owner/session boundary. Mutations require internal UUID and matching `sessionId`. `publicStarId` lookups redact `sessionId` and cannot mutate print assets.
+6. **Server Image Validation & Normalization:** Sharp decodes uploaded buffer, enforces PNG format and exact 1200×1886 dimensions, re-encodes the image to strip foreign chunks, and atomically writes to disk.
+7. **Idempotency & Stale File Cleanup:** Server stores deterministic files `[publicStarId]_[safeSlug].png`. Retries, remounts, and F5 reloads update the canonical file; renaming cleans up any prior file with the same Star ID prefix.
+8. **Storage Portability & Persistence:** Uses portable Node `path` utilities with `CARD_OUTPUT_DIR` override. Production containers must mount `uploads/cards/` as a persistent volume.
+9. **Route Protection:** Public HTTP access to `/uploads/cards/` is blocked (403 Forbidden) to prevent student print assets from being crawled or exposed. No admin ZIP or dashboard is included in this MVP.
 
 ## 11. Sensitive files and change map
 

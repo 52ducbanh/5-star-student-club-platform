@@ -53,4 +53,18 @@ export const starprintApi = {
   getSky(): Promise<SkyStar[]> {
     return apiClient.get<SkyStar[]>('/sky')
   },
+
+  uploadCardImage(
+    starprintId: string,
+    sessionId: string,
+    imageBlob: Blob,
+  ): Promise<{ success: boolean; saved: boolean; reason?: string }> {
+    const formData = new FormData()
+    formData.append('file', imageBlob, 'card.png')
+    formData.append('sessionId', sessionId)
+    return apiClient.postMultipart<{ success: boolean; saved: boolean; reason?: string }>(
+      `/starprints/${starprintId}/card-image`,
+      formData,
+    )
+  },
 }

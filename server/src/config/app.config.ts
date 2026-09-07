@@ -11,5 +11,6 @@ export default () => ({
   media: {
     storage: process.env.MEDIA_STORAGE || 'local',
     localDir: process.env.MEDIA_LOCAL_DIR || 'uploads',
+    cardDir: process.env.CARD_OUTPUT_DIR || '',
   }
 });

@@ -26,6 +26,11 @@ async function bootstrap() {
 
   app.useGlobalFilters(new DomainExceptionFilter());
   
+  // Restrict public access to event print assets directory
+  app.use('/uploads/cards', (_req, res) => {
+    res.status(403).json({ statusCode: 403, message: 'Access to print assets is restricted' });
+  });
+
   const uploadDir = configService.get<string>('media.localDir', 'uploads');
   app.use(
     '/uploads',
