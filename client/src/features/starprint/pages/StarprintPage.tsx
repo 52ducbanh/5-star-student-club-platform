@@ -1,6 +1,7 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useStarprintStore } from "../store/useStarprintStore"
+import { ApiError, ensureServerReady } from "@/shared/services/http/apiClient"
 import { starprintApi } from "../services/starprintApi"
 import { StarprintIntro } from "../components/StarprintIntro"
 import { PlayerInfoStep } from "../components/PlayerInfoStep"
@@ -19,6 +20,9 @@ export default function StarprintPage() {
   const { sessionId, currentStep, setStep, restoreFromSession, reset } = useStarprintStore()
   const navigate = useNavigate()
   const location = useLocation()
+  const [restoring, setRestoring] = useState(Boolean(sessionId))
+  const [restoreError, setRestoreError] = useState(false)
+  const [restoreAttempt, setRestoreAttempt] = useState(0)
 
   useEffect(() => {
     document.title = "STARPRINT | 5SS UET"
@@ -35,21 +39,31 @@ export default function StarprintPage() {
 
   // Restore in-progress session on accidental reload
   useEffect(() => {
-    if (!sessionId) return
+    if (!sessionId) { setRestoring(false); return }
     const params = new URLSearchParams(location.search)
     if (params.get("new") === "1") return
 
-    starprintApi
-      .getSession(sessionId)
+    let cancelled = false
+    setRestoring(true)
+    setRestoreError(false)
+    ensureServerReady()
+      .then(() => starprintApi.getSession(sessionId))
       .then((session) => {
+        if (cancelled) return
         if ((session.status === "GENERATED" || session.status === "PUBLISHED") && session.starprintId) {
           navigate(`/starprint/result/${session.starprintId}`, { replace: true })
           return
         }
         restoreFromSession(session)
       })
-      .catch(() => { reset() })
-  }, [sessionId, location.search, restoreFromSession, reset, navigate])
+      .catch((err: unknown) => {
+        if (cancelled) return
+        if (err instanceof ApiError && (err.statusCode === 404 || err.code === "SESSION_NOT_FOUND")) reset()
+        else setRestoreError(true)
+      })
+      .finally(() => { if (!cancelled) setRestoring(false) })
+    return () => { cancelled = true }
+  }, [sessionId, location.search, restoreFromSession, reset, navigate, restoreAttempt])
 
   const handleStartFresh = () => {
     reset()
@@ -57,6 +71,8 @@ export default function StarprintPage() {
   }
 
   const renderStep = () => {
+    if (restoring) return <div className="game-loading"><p>Đang khôi phục phiên chơi...</p></div>
+    if (restoreError) return <div className="game-error"><p>Máy chủ chưa sẵn sàng. Tiến trình của bạn vẫn được giữ.</p><button className="btn btn--primary" onClick={() => setRestoreAttempt(n => n + 1)}>Thử kết nối lại</button></div>
     switch (currentStep) {
       case "INTRO": return <StarprintIntro onStart={handleStartFresh} />
       case "PLAYER_INFO": return <PlayerInfoStep />

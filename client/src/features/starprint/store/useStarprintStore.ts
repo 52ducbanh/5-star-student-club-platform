@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { StarprintStep, StarprintGameId, MiniGameResult } from '../types/game.types'
 import type { StarprintRenderData } from '../types/api.types'
+import { gameSessionStorage, isLocalPortrait } from '../utils/sessionStorage'
 
 interface StarprintGameState {
   sessionId: string | null
@@ -60,7 +61,7 @@ export const useStarprintStore = create<StarprintGameState & StarprintActions>()
   persist(
     (set) => ({
       ...initialState,
-      setSessionId: (id) => set({ sessionId: id }),
+      setSessionId: (id) => set((state) => ({ sessionId: id, photoPreviewUrl: state.sessionId === id ? state.photoPreviewUrl : null })),
       setNickname: (name) => set({ nickname: name }),
       setPhotoPreviewUrl: (url) => set({ photoPreviewUrl: url }),
       setStep: (step) => set({ currentStep: step }),
@@ -83,7 +84,7 @@ export const useStarprintStore = create<StarprintGameState & StarprintActions>()
             assignedSolveQuestionIds: session.assignedSolveQuestionIds ?? state.assignedSolveQuestionIds,
             assignedSenseScenarioIds: session.assignedSenseScenarioIds ?? state.assignedSenseScenarioIds,
           }
-          const restoredPhoto = session.photoUrl !== undefined ? session.photoUrl : state.photoPreviewUrl
+          const restoredPhoto = isLocalPortrait(state.photoPreviewUrl) ? state.photoPreviewUrl : null
           if (completedGameIds.length === 0 && (state.currentStep === 'CAMERA' || state.currentStep === 'PLAYER_INFO')) {
             return { completedGameIds, photoPreviewUrl: restoredPhoto, ...assignments }
           }
@@ -95,7 +96,16 @@ export const useStarprintStore = create<StarprintGameState & StarprintActions>()
     }),
     {
       name: 'starprint-session',
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => gameSessionStorage),
+      version: 2,
+      migrate: (persisted) => {
+        const state = persisted as Partial<StarprintGameState>
+        return { ...state, photoPreviewUrl: isLocalPortrait(state.photoPreviewUrl) ? state.photoPreviewUrl : null }
+      },
+      merge: (persisted, current) => {
+        const state = persisted as Partial<StarprintGameState>
+        return { ...current, ...state, photoPreviewUrl: isLocalPortrait(state?.photoPreviewUrl) ? state.photoPreviewUrl : null }
+      },
       partialize: (state) => ({
         sessionId: state.sessionId,
         nickname: state.nickname,

@@ -3,7 +3,6 @@ import { toPng } from 'html-to-image'
 import { createRoot } from 'react-dom/client'
 import { StarCard, type StarCardData } from './StarCard'
 import { DEFAULT_STAR_AVATAR, resolveStarCardAvatar } from '../utils/avatar'
-import { starprintApi } from '../services/starprintApi'
 
 /**
  * Loads an image URL and converts it to a base64 data URL to guarantee zero canvas tainting.
@@ -45,7 +44,7 @@ export interface RenderedStarCard {
 
 /**
  * Canonical print renderer: exactly 1200x1886 PNG.
- * SINGLE VISUAL SOURCE OF TRUTH for both manual download and server print storage.
+ * Shared browser renderer for the downloadable card. No server upload occurs.
  */
 export async function renderStarCardToBlob(starprint: StarCardData): Promise<RenderedStarCard> {
   // Pre-resolve avatar and inline as data URL for export reliability
@@ -163,51 +162,4 @@ export async function exportStarCardToPng(starprint: StarCardData): Promise<void
   document.body.appendChild(downloadLink)
   downloadLink.click()
   document.body.removeChild(downloadLink)
-}
-
-/**
- * Non-blocking background automatic upload for physical printing pipeline.
- */
-export async function autoUploadStarCardPrintImage(
-  starprint: StarCardData & { id: string; sessionId?: string; physicalCardRequested?: boolean },
-): Promise<{ success: boolean; saved: boolean; reason?: string }> {
-  // Client optimization: Skip if student opted out of physical card
-  if (starprint.physicalCardRequested === false) {
-    return { success: true, saved: false, reason: 'PHYSICAL_CARD_NOT_REQUESTED' }
-  }
-
-  const sessionId = starprint.sessionId
-  if (!sessionId) {
-    return { success: false, saved: false, reason: 'MISSING_SESSION_ID' }
-  }
-
-  try {
-    const { blob } = await renderStarCardToBlob(starprint)
-
-    // Bounded retry strategy (max 3 attempts with backoff)
-    const maxAttempts = 3
-    let lastError: any = null
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const response = await starprintApi.uploadCardImage(starprint.id, sessionId, blob)
-        return response
-      } catch (err: any) {
-        lastError = err
-        // Do not retry 4xx errors (e.g. 403 unauthorized session / 404 not found)
-        if (err?.statusCode && err.statusCode >= 400 && err.statusCode < 500) {
-          break
-        }
-        if (attempt < maxAttempts) {
-          await new Promise((res) => setTimeout(res, attempt === 1 ? 1000 : 2500))
-        }
-      }
-    }
-
-    console.warn('[StarCardExport] Background card upload failed after retries:', lastError)
-    return { success: false, saved: false, reason: lastError?.message || 'UPLOAD_FAILED' }
-  } catch (err: any) {
-    console.warn('[StarCardExport] Failed to render print card for auto-upload:', err)
-    return { success: false, saved: false, reason: err?.message || 'RENDER_FAILED' }
-  }
 }

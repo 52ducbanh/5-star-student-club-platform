@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect, useCallback, type ChangeEvent } from 'react'
 import { useStarprintStore } from '../store/useStarprintStore'
-import { starprintApi } from '../services/starprintApi'
 import { DEFAULT_STAR_AVATAR } from '../utils/avatar'
 
 type CameraStepView = 'choose' | 'camera_active' | 'preview'
@@ -14,15 +13,10 @@ function checkHasMediaDevices(): boolean {
 }
 
 /**
- * Downscale and compress image client-side to max 1024x1024 JPEG before uploading.
- * Reduces 5MB gallery uploads down to ~80-150KB to preserve bandwidth and server RAM under 100 CCU.
+ * Downscale the portrait for temporary browser-only storage and card rendering.
  */
-async function compressImageBeforeUpload(fileOrBlob: Blob | File): Promise<Blob> {
-  if (fileOrBlob.size < 150 * 1024 && (fileOrBlob.type === 'image/jpeg' || fileOrBlob.type === 'image/webp')) {
-    return fileOrBlob
-  }
-
-  return new Promise((resolve) => {
+async function prepareLocalPortrait(fileOrBlob: Blob | File): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) => {
     const img = new Image()
     const objectUrl = URL.createObjectURL(fileOrBlob)
 
@@ -47,14 +41,14 @@ async function compressImageBeforeUpload(fileOrBlob: Blob | File): Promise<Blob>
       canvas.height = height
       const ctx = canvas.getContext('2d')
       if (!ctx) {
-        resolve(fileOrBlob)
+        reject(new Error('Không thể xử lý ảnh này. Vui lòng chọn ảnh khác.'))
         return
       }
 
       ctx.drawImage(img, 0, 0, width, height)
       canvas.toBlob(
         (blob) => {
-          resolve(blob || fileOrBlob)
+          blob ? resolve(blob) : reject(new Error('Không thể xử lý ảnh này.'))
         },
         'image/jpeg',
         0.85
@@ -293,8 +287,13 @@ export function CameraStep() {
     setUploadError(null)
 
     try {
-      const optimizedBlob = await compressImageBeforeUpload(capturedBlobOrFile)
-      const { photoUrl } = await starprintApi.uploadPhoto(sessionId, optimizedBlob)
+      const optimizedBlob = await prepareLocalPortrait(capturedBlobOrFile)
+      const photoUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(new Error('Không thể đọc ảnh'))
+        reader.readAsDataURL(optimizedBlob)
+      })
       setPhotoPreviewUrl(photoUrl)
 
       if (previewUrlRef.current) {
@@ -303,7 +302,7 @@ export function CameraStep() {
       }
       setStep('SOLVE')
     } catch {
-      setUploadError('Không thể lưu ảnh. Vui lòng thử lại.')
+      setUploadError('Không thể xử lý ảnh. Vui lòng chọn lại ảnh.')
     } finally {
       setUploading(false)
     }
@@ -318,13 +317,6 @@ export function CameraStep() {
     }
     setPhotoPreviewUrl(null)
 
-    if (sessionId) {
-      try {
-        await starprintApi.deletePhoto(sessionId)
-      } catch {
-        /* Best effort cleanup */
-      }
-    }
     setStep('SOLVE')
   }
 
@@ -347,6 +339,7 @@ export function CameraStep() {
           <div className="game-progress">📷 BƯỚC 2 · ẢNH CHÂN DUNG</div>
           <h2>Chân dung tỏa sáng</h2>
           <p>Ảnh chân dung sẽ đặt tại trung tâm của ngôi sao STARPRINT cá nhân</p>
+          <p className="camera-notice">Ảnh chỉ được giữ tạm trong trình duyệt để tạo thẻ tải về. Link chia sẻ và 5SS Sky dùng avatar mặc định.</p>
 
           <div className="camera-avatar-showcase" aria-hidden="true">
             <div className="camera-avatar-showcase__ring" />
@@ -475,7 +468,7 @@ export function CameraStep() {
               onClick={handleConfirmAndSave}
               aria-label="Xác nhận dùng ảnh này"
             >
-              {uploading ? 'Đang lưu ảnh...' : 'Dùng ảnh này ✓'}
+              {uploading ? 'Đang xử lý ảnh...' : 'Dùng ảnh này ✓'}
             </button>
 
             <button

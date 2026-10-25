@@ -5,11 +5,13 @@ import { DatabaseModule } from './database/database.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { GamesModule } from './modules/games/games.module';
 import { StarprintsModule } from './modules/starprints/starprints.module';
-import { UploadsModule } from './modules/uploads/uploads.module';
 import { SkyModule } from './modules/sky/sky.module';
 import { NewsModule } from './modules/news/news.module';
 import { EventsModule } from './modules/events/events.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { HealthModule } from './modules/health/health.module';
+import { APP_GUARD } from '@nestjs/core';
+import { WriteRateLimitGuard } from './common/guards/write-rate-limit.guard';
 
 @Module({
   imports: [
@@ -21,11 +23,12 @@ import { ContactModule } from './modules/contact/contact.module';
     SessionsModule,
     GamesModule,
     StarprintsModule,
-    UploadsModule,
     SkyModule,
     NewsModule,
     EventsModule,
     ContactModule,
+    HealthModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: WriteRateLimitGuard }],
 })
 export class AppModule {}

@@ -23,6 +23,8 @@ lerna-debug.log*
 **/.env
 **/.env.*
 !**/.env.example
+# Public API endpoint only; production builds on Vercel need this file.
+!/client/.env.production
 
 # Test coverage
 **/coverage/

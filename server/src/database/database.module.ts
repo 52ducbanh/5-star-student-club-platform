@@ -1,24 +1,17 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { databaseOptions } from '../config/database.config';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('database.url'),
+      useFactory: () => ({
+        ...databaseOptions(),
         autoLoadEntities: true,
         synchronize: false,
         migrationsRun: false,
-        extra: {
-          max: configService.get<number>('database.maxConnections', 30),
-          min: configService.get<number>('database.minConnections', 5),
-          idleTimeoutMillis: configService.get<number>('database.idleTimeoutMs', 30000),
-          connectionTimeoutMillis: configService.get<number>('database.connectionTimeoutMs', 5000),
-        },
       }),
     }),
   ],

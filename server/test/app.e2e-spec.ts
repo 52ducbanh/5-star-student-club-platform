@@ -244,7 +244,7 @@ describe('STARPRINT Full Lifecycle (e2e)', () => {
         .get(`/api/starprints/${res.body.publicStarId}`)
         .expect(200);
 
-      expect(pubRes.body.id).toBe(starprintId);
+      expect(pubRes.body.id).toBe(res.body.publicStarId);
       // sessionId is redacted for public star ID lookups
       expect(pubRes.body.sessionId).toBe('');
       expect(pubRes.body.nickname).toBe('SinhVienUET');

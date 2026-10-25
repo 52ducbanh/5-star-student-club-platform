@@ -8,7 +8,6 @@ import { PaletteEngine } from './domain/palette-engine';
 import { GamesModule } from '../games/games.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { SkyModule } from '../sky/sky.module';
-import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { UploadsModule } from '../uploads/uploads.module';
     GamesModule,
     SessionsModule,
     SkyModule,
-    UploadsModule,
   ],
   controllers: [StarprintsController],
   providers: [StarprintsService, TypeEngine, PaletteEngine],

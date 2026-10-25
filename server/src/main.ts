@@ -1,15 +1,15 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
 import { buildCorsOriginMatcher } from './common/utils/cors.util';
-import * as express from 'express';
-import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
   const configService = app.get(ConfigService);
 
   const clientOrigin = configService.get<string>('clientOrigin');
@@ -26,25 +26,6 @@ async function bootstrap() {
 
   app.useGlobalFilters(new DomainExceptionFilter());
   
-  // Restrict public access to event print assets directory
-  app.use('/uploads/cards', (_req, res) => {
-    res.status(403).json({ statusCode: 403, message: 'Access to print assets is restricted' });
-  });
-
-  const uploadDir = configService.get<string>('media.localDir', 'uploads');
-  app.use(
-    '/uploads',
-    express.static(join(process.cwd(), uploadDir), {
-      maxAge: '7d',
-      immutable: true,
-      setHeaders: (res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-      },
-    }),
-  );
-
   const config = new DocumentBuilder()
     .setTitle('5SS STARPRINT API')
     .setDescription('API for 5SS Starprint feature')
@@ -53,6 +34,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  app.enableShutdownHooks();
   const port = configService.get<number>('port') || 3000;
   await app.listen(port, '0.0.0.0');
 }

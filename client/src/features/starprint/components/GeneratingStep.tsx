@@ -21,7 +21,7 @@ export function GeneratingStep() {
       const data = await starprintApi.generateStarprint({ sessionId, baseColor: selectedColor })
       const finalData = {
         ...data,
-        photoUrl: data.photoUrl || photoPreviewUrl || null,
+        photoUrl: photoPreviewUrl || null,
       }
       setStarprint(finalData)
       setStep('FINAL_REVEAL')

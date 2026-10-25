@@ -51,7 +51,7 @@ const seedNews = [
       '• Bài đăng Facebook: https://www.facebook.com/share/p/1J1L9M8rUz/',
     ],
     tag: 'Tuyển quân',
-    imageUrl: '/uploads/tuyen-quan-sv5t.png',
+    imageUrl: '/assets/tuyen-quan-sv5t.png',
     publishedAt: parseVNDateTime('20.08.2026', '08:00'),
   },
   {
@@ -66,7 +66,7 @@ const seedNews = [
       'Nguồn: UET-News (https://uet.vnu.edu.vn/sinh-vien-uet-trao-doi-quoc-te-tai-dh-su-pham-quang-tay-trung-quoc-di-de-hoi-nhap-hoc-de-but-pha/)',
     ],
     tag: 'Hội nhập',
-    imageUrl: '/uploads/trai-he.jpg',
+    imageUrl: '/assets/trai-he.jpg',
     publishedAt: parseVNDateTime('15.08.2026', '09:00'),
   },
   {
@@ -80,7 +80,7 @@ const seedNews = [
       'Đại diện Ban Chủ nhiệm: Lê Thúy Hà (Chủ nhiệm CLB). Địa điểm sinh hoạt chính thức tại 144 Xuân Thủy, Cầu Giấy, Hà Nội.',
     ],
     tag: 'Tin tức',
-    imageUrl: '/uploads/logo-5ss.png',
+    imageUrl: '/assets/logo-5ss.png',
     publishedAt: parseVNDateTime('28.01.2026', '08:00'),
   },
 ];
@@ -118,7 +118,7 @@ const seedEvents: Array<{
       'Hãy nhanh tay điền form đăng ký để nhận ngay những phần quà hấp dẫn và khởi đầu hành trình rèn luyện rực rỡ cùng UET 5SS!',
     ],
     location: 'Trường ĐH Công nghệ - ĐHQGHN (144 Xuân Thủy, Cầu Giấy, Hà Nội)',
-    imageUrl: '/uploads/nhap-hoc-cung-5-tot.png',
+    imageUrl: '/assets/nhap-hoc-cung-5-tot.png',
     startAt: parseVNDateTime('03.09.2026', '08:00'),
     endAt: parseVNDateTime('05.09.2026', '23:59'),
     registrationDeadline: parseVNDateTime('05.09.2026', '23:59'),
