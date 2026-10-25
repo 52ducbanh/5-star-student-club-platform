@@ -45,4 +45,3 @@ The compiled data source is required for migrations. CI provisions its own Postg
 See [runbook](../deployment/README.md): clean CI, repeated migration with zero pending work, live health/readiness, exact CORS, HTTPS/Socket.IO, restart persistence, cron execution history and backup/restore rehearsal. Use a specifically named QA session and remove only that fixture after testing.
 
 Known gaps: automated client component/e2e/accessibility/visual checks, distributed Socket.IO/limits, sustained production-like load testing, approved retention/moderation policy and disaster-recovery automation. Passing tests do not constitute BA approval or establish psychometric validity.
-

@@ -9,8 +9,8 @@ Approved topology: Vercel static React client → Render single NestJS/Socket.IO
 | Frontend | Existing Vercel project `5-star-student-club-platform-client` |
 | Backend | Render Free, Singapore, service `5ss-starprint-api` |
 | Database | Supabase Free project `5ss-starprint`, Singapore, project ref `pwyfnsondzatcjrncbve` |
-| Liveness | `GET https://5ss-starprint-api.onrender.com/api/health` |
-| Readiness | `GET https://5ss-starprint-api.onrender.com/api/health/ready` |
+| Liveness | `GET https://fivess-starprint-api.onrender.com/api/health` |
+| Readiness | `GET https://fivess-starprint-api.onrender.com/api/health/ready` |
 | Monitoring | cron-job.org, liveness every 5 min; readiness every 15 min |
 
 Provisioning status and validation evidence are recorded in the root project context. Resource names alone do not confirm a successful release.
@@ -65,7 +65,7 @@ Expected steady-state pool is at most 5 runtime connections, plus 2 during start
 
 - Use the existing project, Git repository and production branch `main`.
 - Install/build from the monorepo root; build contracts before the client. Keep the existing SPA rewrite in `client/vercel.json` and output `client/dist` (or project root `client` with its existing workspace-aware commands).
-- Set Production `VITE_API_URL=https://5ss-starprint-api.onrender.com/api`. Remove stale ngrok socket/media overrides, or point `VITE_SOCKET_URL` to the backend origin without `/api`. `/assets/` remains on Vercel.
+- Set Production `VITE_API_URL=https://fivess-starprint-api.onrender.com/api`. Remove stale ngrok socket/media overrides, or point `VITE_SOCKET_URL` to the backend origin without `/api`. `/assets/` remains on Vercel.
 - These variables are public build configuration. Never add database URLs, passwords, service-role keys or migration credentials to any `VITE_*` variable.
 - Vite reads `client/.env.production` as a public default. Vercel project overrides take precedence. Redeploy after changing environment variables; an already-built deployment does not pick them up.
 - CORS accepts only configured origins in production. Preview domains require deliberate additional origins/backend isolation; do not enable every preview domain for production writes.

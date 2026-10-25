@@ -22,7 +22,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/five_ss_test
       DATABASE_SSL: 'false'
-      VITE_API_URL: https://5ss-starprint-api.onrender.com/api
+      VITE_API_URL: https://fivess-starprint-api.onrender.com/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

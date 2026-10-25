@@ -773,4 +773,3 @@ The event printing pipeline has been implemented end-to-end to support physical 
 | Contact module | `server/src/modules/contact/*` |
 | Server lifecycle | `server/src/modules/sessions/*`, `games/*`, `starprints/*` |
 | Database schema & seeds | `server/src/database/migrations/*`, `seeds/dev-seed.ts`, `seeds/clean-minigames.ts`, `database/data-source.ts` |
-
