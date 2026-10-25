@@ -30,6 +30,12 @@ User approved Vercel frontend, Render Free API in Singapore, Supabase Free Postg
 
 After accepting the deployed game, the owner explicitly requested clearing all existing stars and starting fresh. The production Supabase game tables were backed up (verified custom-format archive plus JSON snapshot), write-locked and cleared transactionally: **9 starprints, 70 game results and 20 sessions removed**. All three game tables were verified empty, live `GET /api/sky` returned `200 []`, and readiness remained healthy. News (3), events (1), contacts (4), registrations (0) and migration history (6) were content-checksummed unchanged. The original local database/files were not reset. Backup/report files are ignored under `scratch/starprint-before-reset-2026-10-25T08-31-13-888Z.*`; do not commit them. Existing browser tabs may require reload; `/starprint?new=1` clears their old local game state. This operation does not establish a recurring retention/deletion policy.
 
+### Reviewed fanpage news import — 2026-10-25
+
+The owner requested loading the newest public posts from https://www.facebook.com/5ss.uet into the club website. `content/facebook-news-2026-10-25.json` records six browser-verified article summaries, original source URLs/publishers and Vietnam publication timestamps (including the ĐTN–HSV UET Club Expo post shared by 5SS). Matching covers are static files in `client/public/assets/news/2026-10/`, served by Vercel. No Facebook credentials, signed CDN links, comments or personal activity are stored in the repository.
+
+`scripts/import-facebook-news.cjs` is an explicit, one-time news-only importer, defaulting to dry-run. It uses the existing verified database TLS configuration, backs up news under ignored `scratch/`, inserts missing slugs/source URLs transactionally and checks that existing news is unchanged. It is not a startup task or a scheduled crawler. Deploy covers before applying the reviewed content; no API/schema/UI change or new storage service is required. Local typecheck/lint/build and importer syntax checks passed; the production dry-run found six inserts and no duplicates against the three original articles. Production apply and live verification are pending at this checkpoint. See `content/README.md` for the workflow.
+
 ## Client routes and state
 
 | Route | Behavior |
