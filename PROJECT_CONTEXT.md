@@ -24,7 +24,7 @@ User approved Vercel frontend, Render Free API in Singapore, Supabase Free Postg
 - Cloud rows clear legacy portrait URLs and physical-card flags. Static marketing URLs use first-party `/assets/` paths.
 - Runtime `app_runtime` has only application DML/schema usage. Application tables have RLS policies restricted to that role; anon/authenticated grants are revoked. Migration credentials remain separate.
 - Local API successfully starts against Supabase with the runtime role; `/api/health/ready` returns healthy.
-- Render service srv-dberbdjncjis73f6jk70 is Live at https://fivess-starprint-api.onrender.com on merged commit 5601c13. Vercel API/media variables have been replaced with Config values for the assigned Render origin. cron-job.org jobs 8718306 (5 min liveness) and 8718317 (15 min readiness) are enabled, with HTTP 200 test runs and email failure/recovery after 3 failures. Final Vercel production rollout and browser checks are in progress.
+- Render service srv-dberbdjncjis73f6jk70 is Live at https://fivess-starprint-api.onrender.com on release code commit 41f0214. Vercel API/media variables have been replaced with Config values for the assigned Render origin. cron-job.org jobs 8718306 (5 min liveness) and 8718317 (15 min readiness) are enabled, with HTTP 200 test runs and email failure/recovery after 3 failures. Vercel Production is Ready on 41f0214. Both jobs also succeeded on scheduled executions. Full production gameplay, 1200×1886 card download with a local image, public mascot-only card, exactly one realtime star event, and backend restart/reconnect were verified. Three synthetic QA sessions were backed up privately and removed; all original 100 application records remain.
 
 ## Client routes and state
 
@@ -103,7 +103,7 @@ Production CORS uses exact `CLIENT_ORIGIN` values. Express trusts one Render pro
 - Build server before `npm run migration:deploy` or workspace `migration:run`.
 - `npm test -- --runInBand` runs server tests. Always use an isolated test DB; integration tests write/delete their fixtures.
 - CI: `.github/workflows/ci.yml`, clean npm install, typecheck/lint/build, isolated PostgreSQL service, migrations, Jest. It does not access production secrets.
-- Latest local validation: typecheck/build/lint passed; public result mapping also redacts the internal owner UUID; Jest **140/140 in 13 suites**, including upload retirement, health failures, TLS config and write limits. Clean GitHub CI passed on 12bc7b7 and PR #1 merged. Production health/readiness/news/events/Sky, exact CORS, upload retirement, public capability redaction and 50 concurrent readiness requests passed; final frontend rollout verification remains pending.
+- Latest local validation: typecheck/build/lint passed; public result mapping also redacts the internal owner UUID; Jest **140/140 in 13 suites**, including upload retirement, health failures, TLS config and write limits. Clean GitHub CI passed on 12bc7b7 and PR #1 merged. Production health/readiness/news/events/Sky, exact CORS, upload retirement, public capability redaction and 50 concurrent readiness requests passed; full frontend production rollout/card export/reload and Sky realtime/reconnect checks passed. Backup restore into an isolated DB and browser-storage fallback checks also passed. See docs/deployment/VALIDATION.md.
 
 ## TODO BUSINESS CONFIRMATION / TODO GAME DESIGN CONFIRMATION
 

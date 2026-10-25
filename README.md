@@ -6,6 +6,8 @@ React marketing site and STARPRINT game with NestJS, Socket.IO and PostgreSQL in
 
 Approved stack: **Vercel client + Render API + Supabase PostgreSQL + cron-job.org monitoring**. Portrait selection/camera and PNG download work in the browser. The server does not store portrait/card files; shared results and Sky use the default mascot.
 
+Live game: [STARPRINT](https://5-star-student-club-platform-client.vercel.app/starprint). [Release verification](docs/deployment/VALIDATION.md) records checks and service identifiers.
+
 See [deployment and operations](docs/deployment/README.md) for exact settings, TLS, migrations, backups, health jobs and rollback. See [current project context](PROJECT_CONTEXT.md) for actual release status and [architecture](docs/architecture/README.md) for boundaries.
 
 ## Local setup
