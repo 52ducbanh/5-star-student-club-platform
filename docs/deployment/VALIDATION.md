@@ -31,7 +31,11 @@ Release code: PR [#1](https://github.com/52ducbanh/5-star-student-club-platform/
 
 Full production flow completed with a selected synthetic logo image. PNG download was visually inspected and measured at 1200×1886 (2,561,475 bytes); the matching private result retained its local JPEG after reload. Its public link used the default mascot. Network observation across 113 requests found zero photo/card uploads. Sky received exactly one star.created event and added one matching card. Render recorded a service restart at 15:21 and its startup log reported zero pending migrations at 15:21:54; the persisted result reloaded correctly, the local portrait remained, and Sky returned to LIVE.
 
-Three deployment-only QA sessions were backed up privately and removed by exact recorded IDs and nicknames. Remaining table counts match the original 100 application records, with six migration-history rows. No pre-existing user/session records were removed.
+At deployment completion, three deployment-only QA sessions were backed up privately and removed by exact recorded IDs and nicknames. Table counts then matched the original 100 application records, with six migration-history rows. No pre-existing user/session records were removed during that deployment validation.
+
+## Subsequent owner-requested game reset
+
+On 2026-10-25 at 15:31 Asia/Ho_Chi_Minh, after accepting the deployed game, the owner requested removing all existing stars for a fresh start. The production reset removed 9 starprints, 70 game results and 20 sessions inside a transaction after verifying a private custom-format backup and JSON snapshot. All three tables were empty after deletion; the live Sky API returned HTTP 200 with `[]`, and database readiness returned 200. Content checksums confirmed news, events, contacts, registrations and migration history were unchanged. Local development data/files were preserved. Backup and report are under ignored `scratch/starprint-before-reset-2026-10-25T08-31-13-888Z.*`. Old browser tabs can reload Sky or open `/starprint?new=1` to discard their old session state. No application code or schema changed for this operation.
 
 ## Operating boundaries
 
