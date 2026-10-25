@@ -35,7 +35,7 @@ describe('P1 Authorization & P2 Sky Payload Verification', () => {
       expect(skyStar.type).toBe('STRATEGIST');
       expect(skyStar.effect).toBe('SHIMMER');
       expect(skyStar.nickname).toBe('TestUser');
-      expect(skyStar.photoUrl).toBe('/uploads/test.webp');
+      expect(skyStar.photoUrl).toBeNull();
       expect(skyStar.createdAt).toBe('2026-09-02T12:00:00.000Z');
     });
 
@@ -87,11 +87,22 @@ describe('P1 Authorization & P2 Sky Payload Verification', () => {
         {} as any,
         { emitStarCreated: jest.fn() } as any,
         {} as any,
-        {
-          savePrintCardImage: jest.fn(),
-          deleteCardImageByStarId: jest.fn(),
-        } as any,
       );
+    });
+
+    it('does not expose an owner capability through the public result response', async () => {
+      const uuid = '44444444-4444-4444-4444-444444444444';
+      mockStarprintRepo.findOne.mockResolvedValue({
+        id: uuid, publicStarId: 'STAR-PUBLIC12', sessionId: 'owner-session',
+        type: 'STRATEGIST', session: {nickname: 'Test', photoUrl: '/uploads/old.webp'},
+      });
+      const publicResult = await service.findOne('STAR-PUBLIC12');
+      expect(publicResult.id).toBe('STAR-PUBLIC12');
+      expect(publicResult.sessionId).toBe('');
+      expect(publicResult.photoUrl).toBeNull();
+      const ownerResult = await service.findOne(uuid);
+      expect(ownerResult.id).toBe(uuid);
+      expect(ownerResult.sessionId).toBe('owner-session');
     });
 
     it('rejects mutation when publicStarId is used as target ID (UNAUTHORIZED_MUTATION)', async () => {

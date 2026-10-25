@@ -17,7 +17,7 @@ export function mapStarprintToSkyStar(
     type: sp.type,
     effect: sp.effect,
     nickname: sp.consentName ? (sess?.nickname ?? null) : null,
-    photoUrl: sp.consentPhoto ? (sess?.photoUrl ?? null) : null,
+    photoUrl: null,
     createdAt: sp.createdAt ? sp.createdAt.toISOString() : new Date().toISOString(),
   };
 }

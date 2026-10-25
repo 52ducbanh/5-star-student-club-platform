@@ -1,4 +1,4 @@
-import { Injectable, HttpStatus, Logger } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Starprint } from './entities/starprint.entity';
@@ -18,7 +18,6 @@ import { DomainErrorCode } from '../../common/exceptions/domain-error.enum';
 import { SkyGateway } from '../sky/sky.gateway';
 import { aggregateGlobalHiddenProfile } from '../games/scoring/v2/hidden-profile.engine';
 import { mapStarprintToSkyStar } from '../sky/sky.service';
-import { UploadsService } from '../uploads/uploads.service';
 import type { SkyStar } from '@5ss/contracts';
 
 function generatePublicStarId(): string {
@@ -32,7 +31,6 @@ function generatePublicStarId(): string {
 
 @Injectable()
 export class StarprintsService {
-  private readonly logger = new Logger(StarprintsService.name);
 
   constructor(
     @InjectRepository(Starprint)
@@ -45,7 +43,6 @@ export class StarprintsService {
     private readonly paletteEngine: PaletteEngine,
     private readonly skyGateway: SkyGateway,
     private readonly dataSource: DataSource,
-    private readonly uploadsService: UploadsService,
   ) {}
 
   async generate(dto: GenerateStarprintDto): Promise<StarprintResponseDto> {
@@ -101,7 +98,7 @@ export class StarprintsService {
         publishedAt: new Date(),
         consentName: true,
         consentPhoto: true,
-        physicalCardRequested: true,
+        physicalCardRequested: false,
         mediaPermission: true,
         eventId: '5ss-khai-hoi-2026',
         eventEdition: '2026.1',
@@ -128,7 +125,7 @@ export class StarprintsService {
         publishedAt: new Date(),
         consentName: true,
         consentPhoto: true,
-        physicalCardRequested: true,
+        physicalCardRequested: false,
         mediaPermission: true,
         eventId: 'default-2026',
         eventEdition: '2026.1',
@@ -196,30 +193,12 @@ export class StarprintsService {
       );
     }
 
-    // Product rule: consentName and consentPhoto are always true.
-    // The user-facing checkboxes for these have been removed; nickname and
-    // portrait are always included in the 5SS Sky public display.
+    // Preserve legacy consent fields; public portraits are always redacted.
     starprint.consentName = true;
     starprint.consentPhoto = true;
 
-    // Physical card rule: If physical_card_requested = true then media_permission = true
-    if (dto.physicalCardRequested) {
-      starprint.physicalCardRequested = true;
-      starprint.mediaPermission = true;
-    } else if (dto.physicalCardRequested !== undefined) {
-      starprint.physicalCardRequested = false;
-      if (dto.mediaPermission !== undefined) {
-        starprint.mediaPermission = dto.mediaPermission;
-      }
-      // Product/Operations rule: If physical card was opted out, purge any existing print file
-      if (starprint.publicStarId) {
-        await this.uploadsService.deleteCardImageByStarId(starprint.publicStarId);
-        this.logger.log(`[STARPRINT] CARD_PURGED_OPT_OUT publicStarId=${starprint.publicStarId}`);
-      }
-    } else if (dto.mediaPermission !== undefined) {
-      starprint.mediaPermission = dto.mediaPermission;
-    }
-
+    starprint.physicalCardRequested = false;
+    if (dto.mediaPermission !== undefined) starprint.mediaPermission = dto.mediaPermission;
     starprint.isPublic = true;
     starprint.publishedToSky = true;
     if (!starprint.publishedAt) {
@@ -229,67 +208,10 @@ export class StarprintsService {
     await this.starprintRepository.save(starprint);
   }
 
-  async saveCardImage(
-    id: string,
-    sessionId: string,
-    fileBuffer: Buffer,
-  ): Promise<{ success: boolean; saved: boolean; reason?: string }> {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (!isUuid) {
-      throw new DomainException(
-        DomainErrorCode.UNAUTHORIZED_MUTATION,
-        'Public star ID cannot be used for mutation. Starprint UUID and owner session required.',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    if (!sessionId) {
-      throw new DomainException(
-        DomainErrorCode.UNAUTHORIZED_SESSION,
-        'Unauthorized: session ID is required',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    const starprint = await this.starprintRepository.findOne({
-      where: { id },
-      relations: ['session'],
-    });
-    if (!starprint) {
-      throw new DomainException(DomainErrorCode.STARPRINT_NOT_FOUND, 'Starprint not found', 404);
-    }
-
-    if (starprint.sessionId !== sessionId) {
-      throw new DomainException(
-        DomainErrorCode.UNAUTHORIZED_SESSION,
-        'Unauthorized: session does not own this starprint',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    // Business rule: print folder is ONLY for physicalCardRequested === true
-    if (!starprint.physicalCardRequested) {
-      if (starprint.publicStarId) {
-        await this.uploadsService.deleteCardImageByStarId(starprint.publicStarId);
-      }
-      this.logger.log(
-        `[STARPRINT] CARD_SAVE_SKIPPED publicStarId=${starprint.publicStarId || starprint.id} reason=PHYSICAL_CARD_NOT_REQUESTED`,
-      );
-      return { success: true, saved: false, reason: 'PHYSICAL_CARD_NOT_REQUESTED' };
-    }
-
-    const publicStarId = starprint.publicStarId || starprint.id;
-    const nickname = starprint.session?.nickname || '';
-    const result = await this.uploadsService.savePrintCardImage(publicStarId, nickname, fileBuffer);
-
-    this.logger.log(`[STARPRINT] CARD_SAVE_OK publicStarId=${publicStarId} filename=${result.filename}`);
-    return { success: true, saved: true };
-  }
-
   private mapToResponse(
     starprint: Starprint,
     nickname?: string,
-    photoUrl?: string | null,
+    _photoUrl?: string | null,
     includeSessionId = true,
   ): StarprintResponseDto {
     const v2Def = STAR_TYPE_DEFINITIONS[starprint.type as any];
@@ -299,10 +221,10 @@ export class StarprintsService {
       : legacyDef || STAR_TYPES.NAVIGATOR;
 
     return {
-      id: starprint.id,
+      id: includeSessionId ? starprint.id : (starprint.publicStarId || starprint.id),
       sessionId: includeSessionId ? starprint.sessionId : '',
       nickname: nickname || '',
-      photoUrl: photoUrl || null,
+      photoUrl: null,
       type: {
         id: typeDef.id,
         name: typeDef.name,
@@ -318,7 +240,7 @@ export class StarprintsService {
       globalProfile7D: starprint.globalHiddenProfile || null,
       isPublic: starprint.isPublic,
       publishedToSky: starprint.publishedToSky ?? true,
-      physicalCardRequested: starprint.physicalCardRequested ?? true,
+      physicalCardRequested: false,
       mediaPermission: starprint.mediaPermission ?? true,
       eventId: starprint.eventId ?? 'default-2026',
       eventEdition: starprint.eventEdition ?? '2026.1',

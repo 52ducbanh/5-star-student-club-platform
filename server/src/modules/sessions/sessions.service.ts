@@ -98,15 +98,6 @@ export class SessionsService {
     return this.mapToResponse(session, completedGameIds, starprintId);
   }
 
-  async updatePhoto(id: string, photoUrl: string | null): Promise<void> {
-    const session = await this.sessionRepository.findOne({ where: { id } });
-    if (!session) {
-      throw new DomainException(DomainErrorCode.SESSION_NOT_FOUND, 'Session not found', 404);
-    }
-    session.photoUrl = photoUrl;
-    await this.sessionRepository.save(session);
-  }
-
   async updateStatus(id: string, status: SessionStatus): Promise<void> {
     await this.sessionRepository.update(id, { status });
   }
@@ -115,7 +106,7 @@ export class SessionsService {
     return {
       id: session.id,
       nickname: session.nickname,
-      photoUrl: session.photoUrl,
+      photoUrl: null,
       status: session.status as ContractSessionStatus,
       completedGameIds,
       starprintId,

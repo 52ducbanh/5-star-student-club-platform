@@ -56,7 +56,10 @@ export default function SkyPage() {
           timeout: 10000,
         })
         socketInstance.on("connect", () => {
-          if (isMountedRef.current) setConnected(true)
+          if (isMountedRef.current) {
+            setConnected(true)
+            void fetchSky()
+          }
         })
         socketInstance.on("disconnect", () => {
           if (isMountedRef.current) setConnected(false)

@@ -16,24 +16,6 @@ export const starprintApi = {
     return apiClient.get<SessionResponse>(`/sessions/${id}`)
   },
 
-  uploadPhoto(sessionId: string, fileOrBlob: Blob | File): Promise<{ photoUrl: string }> {
-    const formData = new FormData()
-    const filename =
-      fileOrBlob instanceof File && fileOrBlob.name
-        ? fileOrBlob.name
-        : fileOrBlob.type === 'image/png'
-          ? 'photo.png'
-          : fileOrBlob.type === 'image/webp'
-            ? 'photo.webp'
-            : 'photo.jpg'
-    formData.append('file', fileOrBlob, filename)
-    return apiClient.postMultipart<{ photoUrl: string }>(`/sessions/${sessionId}/photo`, formData)
-  },
-
-  deletePhoto(sessionId: string): Promise<void> {
-    return apiClient.delete(`/sessions/${sessionId}/photo`)
-  },
-
   submitGame(sessionId: string, gameId: string, payload: SubmitGameRequest): Promise<SubmitGameResponse> {
     return apiClient.post<SubmitGameResponse>(`/sessions/${sessionId}/games/${gameId}`, payload)
   },
@@ -54,17 +36,4 @@ export const starprintApi = {
     return apiClient.get<SkyStar[]>('/sky')
   },
 
-  uploadCardImage(
-    starprintId: string,
-    sessionId: string,
-    imageBlob: Blob,
-  ): Promise<{ success: boolean; saved: boolean; reason?: string }> {
-    const formData = new FormData()
-    formData.append('file', imageBlob, 'card.png')
-    formData.append('sessionId', sessionId)
-    return apiClient.postMultipart<{ success: boolean; saved: boolean; reason?: string }>(
-      `/starprints/${starprintId}/card-image`,
-      formData,
-    )
-  },
 }

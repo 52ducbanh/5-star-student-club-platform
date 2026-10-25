@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: 5ss-starprint-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev && npm run build:contracts && npm run build:server
+    startCommand: bash scripts/render-start.sh
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - server/**
+        - packages/contracts/**
+        - scripts/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+        - .node-version
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: MIGRATION_DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_CA
+        sync: false
+      - key: CLIENT_ORIGIN
+        value: https://5-star-student-club-platform-client.vercel.app
+      - key: DATABASE_MAX_CONNECTIONS
+        value: "5"
+      - key: DATABASE_MIN_CONNECTIONS
+        value: "0"
+      - key: DATABASE_CONNECT_TIMEOUT_MS
+        value: "3000"

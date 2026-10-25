@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useStarprintStore } from '../store/useStarprintStore'
 import { starprintApi } from '../services/starprintApi'
+import { ensureServerReady } from '@/shared/services/http/apiClient'
 
 export function PlayerInfoStep() {
   const [nickname, setNickname] = useState('')
@@ -16,6 +17,7 @@ export function PlayerInfoStep() {
     setLoading(true)
     setError('')
     try {
+      await ensureServerReady()
       const session = await starprintApi.createSession({ nickname: trimmed })
       storeNickname(trimmed)
       setSessionId(session.id)
@@ -48,7 +50,7 @@ export function PlayerInfoStep() {
           ✨ Ngôi sao STARPRINT của bạn sẽ tự động tỏa sáng trên 5SS Sky của sự kiện sau khi hoàn thành.
         </p>
         <button type="submit" disabled={loading} className="btn btn--primary">
-          {loading ? 'Đang tạo...' : 'Tiếp theo →'}
+          {loading ? 'Đang kết nối máy chủ...' : 'Tiếp theo →'}
         </button>
       </form>
     </div>

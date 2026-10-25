@@ -10,13 +10,15 @@
   "scripts": {
     "dev:client": "npm run dev --workspace @5ss/client",
     "dev:server": "npm run start:dev --workspace @5ss/server",
+    "dev:tunnel": "ngrok http 3000 --url=https://resurface-exert-reaffirm.ngrok-free.dev",
     "build": "npm run build:contracts && npm run build:client && npm run build:server",
     "build:contracts": "npm run build --workspace @5ss/contracts",
     "build:client": "npm run build --workspace @5ss/client",
     "build:server": "npm run build --workspace @5ss/server",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspace @5ss/server",
-    "preview": "npm run preview --workspace @5ss/client"
+    "test": "npm run test --workspace @5ss/server --",
+    "preview": "npm run preview --workspace @5ss/client",
+    "migration:deploy": "npm --workspace @5ss/server run migration:deploy"
   }
 }

@@ -20,6 +20,27 @@ export function getSocketBaseUrl(): string {
   return apiBase.replace(/\/api\/?$/, '')
 }
 
+function tunnelHeaders(url: string): Record<string, string> {
+  return /\.ngrok(-free)?\.(app|dev|io)(\/|$)/i.test(url)
+    ? { 'ngrok-skip-browser-warning': 'true' } : {}
+}
+
+// Wake a sleeping host before sending a non-idempotent create-session request.
+export async function ensureServerReady(): Promise<void> {
+  const deadline = Date.now() + 90000
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/health/ready`, {
+        cache: 'no-store', signal: createTimeoutSignal(5000),
+        headers: tunnelHeaders(getApiBaseUrl()),
+      })
+      if (response.ok && (await response.json()).status === 'ok') return
+    } catch { /* bounded polling handles cold starts and transient failures */ }
+    await wait(1500)
+  }
+  throw new Error('Máy chủ chưa sẵn sàng. Vui lòng thử lại sau ít phút.')
+}
+
 export function getMediaBaseUrl(): string {
   const envUrl = import.meta.env['VITE_MEDIA_URL'] as string | undefined
   if (envUrl && envUrl.trim() !== '') {
@@ -129,7 +150,7 @@ export const apiClient = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
+        ...tunnelHeaders(baseUrl),
       },
     })
     return handleResponse<T>(res)
@@ -142,7 +163,7 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
+        ...tunnelHeaders(baseUrl),
       },
       body: JSON.stringify(body),
       signal,
@@ -156,7 +177,7 @@ export const apiClient = {
     const res = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
       headers: {
-        'ngrok-skip-browser-warning': 'true',
+        ...tunnelHeaders(baseUrl),
       },
       body: formData,
       signal,
@@ -170,7 +191,7 @@ export const apiClient = {
     const res = await fetch(`${baseUrl}${path}`, {
       method: 'DELETE',
       headers: {
-        'ngrok-skip-browser-warning': 'true',
+        ...tunnelHeaders(baseUrl),
       },
       signal,
     })
