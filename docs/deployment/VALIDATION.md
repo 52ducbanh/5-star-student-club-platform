@@ -37,6 +37,17 @@ At deployment completion, three deployment-only QA sessions were backed up priva
 
 On 2026-10-25 at 15:31 Asia/Ho_Chi_Minh, after accepting the deployed game, the owner requested removing all existing stars for a fresh start. The production reset removed 9 starprints, 70 game results and 20 sessions inside a transaction after verifying a private custom-format backup and JSON snapshot. All three tables were empty after deletion; the live Sky API returned HTTP 200 with `[]`, and database readiness returned 200. Content checksums confirmed news, events, contacts, registrations and migration history were unchanged. Local development data/files were preserved. Backup and report are under ignored `scratch/starprint-before-reset-2026-10-25T08-31-13-888Z.*`. Old browser tabs can reload Sky or open `/starprint?new=1` to discard their old session state. No application code or schema changed for this operation.
 
+## Subsequent reviewed fanpage news publication
+
+On 2026-10-25 at 15:58 Asia/Ho_Chi_Minh, six recent substantive fanpage posts were summarized and published as news, using `content/facebook-news-2026-10-25.json` and the explicit `scripts/import-facebook-news.cjs` workflow. Dates, publishers, original source URLs and matching cover images were verified in Chrome. Shared Club Expo and UET AI support posts retain their publisher context. This is a one-time update, not a recurring crawler.
+
+- Local typecheck, lint, build and importer syntax checks passed. Existing lint/chunk warnings remain. GitHub CI passed on `e98e7b8` for main and the deployment branch; Vercel reported Ready and Render Live on that commit.
+- All six Vercel images returned HTTP 200 with image content types and SHA-256 hashes matching the local reviewed assets before database publication.
+- Runtime-role import backed up existing news and transactionally added six rows. Total news is nine. Repeating dry-run yields zero inserts and six skips.
+- Original three news rows and events/contacts/registrations/game tables passed unchanged content checksums. Game tables remain empty after the earlier owner-requested reset.
+- Public news listing/order and six detail endpoints match titles, excerpts, bodies, source credits, dates and image paths. Original detail endpoints remain intact. Readiness returned 200 with database up; Sky returned 200 with `[]`.
+- Live Chrome verification covered nine visible news articles, all six new covers, recruitment detail with correct form/source anchors and the homepage's three newest articles. Screenshots and private baseline/backup/report remain ignored under `scratch/`.
+
 ## Operating boundaries
 
 Portraits and generated PNG are not stored by the API. Same-tab sessionStorage is temporary and best-effort; users should download the card. Public links/Sky use the mascot. No object storage or Render persistent disk is provisioned.
